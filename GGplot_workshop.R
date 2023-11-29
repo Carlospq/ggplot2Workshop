@@ -422,6 +422,22 @@ p + annotate("rect", xmin = 0.75, xmax = 2, ymin = 0, ymax = 0.75, alpha = .2) +
     annotate("segment", x = 2, xend = 3, y = 2, yend = 0, colour = "steelblue")
   
 
+# Assisted annotation ggforce / ggrepel
+library(ggforce)
+library(ggrepel)
+ggplot(iris, aes(x=Petal.Length, y=Petal.Width, color=Species)) +
+  geom_point() +
+  geom_smooth(formula = y ~ x, method='lm') + 
+  geom_mark_ellipse(aes(filter = Species=='setosa',
+                        label = 'Setosa',
+                        description = 'Observations from the Setosa species'))
+
+ggplot(mtcars, aes(x = disp, y = mpg)) +
+  geom_point() +
+  geom_text_repel(
+    aes(label = row.names(mtcars))
+  )
+
 # using vectors to add annotations
 maxSetosaPL <- max(iris[iris$Species=="setosa", "Petal.Length"])
 maxSetosaPW <- max(iris[iris$Species=="setosa" & iris$Petal.Length==maxSetosaPL, "Petal.Width"])
