@@ -1,0 +1,1464 @@
+#Part of this workshop has been adapted from (Thomas Lin Pedersen) GitHub repository: https://github.com/thomasp85/ggplot2_workshop
+#Link to youtube video: https://www.youtube.com/watch?v=h29g21z0a68
+#Plenty of examples here: http://www.sthda.com/english/wiki/be-awesome-in-ggplot2-a-practical-guide-to-be-highly-effective-r-software-and-data-visualization
+
+#It's dangerous to go alone! Take this (cheat sheet): https://rstudio.github.io/cheatsheets/data-visualization.pdf
+
+# Libraries needed for this workshop:
+# Package names
+packages <- c('ggplot2', 'dplyr', 'grid', 'gridExtra', 'tidyr', 'reshape2')
+
+# Install packages not yet installed
+installed_packages <- packages %in% rownames(installed.packages())
+if (any(installed_packages == FALSE)) {
+  install.packages(packages[!installed_packages])
+}
+
+# Packages loading
+invisible(lapply(packages, library, character.only = TRUE))
+
+
+# Optional (for some examples):
+optional_packages <- c('maps', 'ggrepel', 'ggraph', 'igraph', 'tidygraph', 'GGally', 'treeio', 'ggtree', 'chorddiag', 'wordcloud2', 'gt', 'RColorBrewer')
+
+# Install packages not yet installed
+installed_packages <- optional_packages %in% rownames(installed.packages())
+if (any(installed_packages == FALSE)) {
+  install.packages(optional_packages[!installed_packages])
+}
+
+# Packages loading
+invisible(lapply(optional_packages, library, character.only = TRUE))
+
+
+##########################################################################################
+### reshaping data ###
+
+# A dataset can be written in two different formats: wide and long. A wide format has values that do not repeat in the first column. A long format has values that do repeat in the first column.
+# Iris data is presented in wide format. In some cases ggplot will require long format in order to plot the data correctly.
+# To transform from wide to long we have several options:
+
+data(iris)
+head(iris)
+
+# gather() from tidyr
+gather(iris,                      # Data object
+       feature,                   # Name of new key column (made from names of data columns)
+       value,                     # Name of new value column
+       Sepal.Length:Petal.Width,  # Names of source columns that contain values
+       factor_key=TRUE)           # Treat the new key column as a factor (instead of character vector)
+
+# melt() from reshape2
+head(
+  melt(iris, id.vars=c("Species"))  # Specify id.vars: the variables to keep but not split apart on
+)
+# There are options for melt that can make the output a little easier to work with:
+head(
+  melt(iris,
+        id.vars=c("Species"),                            # ID variables - all the variables to keep but not split apart on
+        measure.vars=c("Sepal.Length", "Sepal.Width",    # The source columns
+                       "Petal.Length", "Petal.Width"),
+        variable.name="variable",                        # Name of the destination columns that will identify the original columns that the measurement came from
+        value.name="value")
+)
+
+# To transform from long to wide you can use spread()
+
+
+##########################################################################################
+### basic plot with ggplot and mapping ###
+
+# The main function of ggplot is the ggplot() function. It has two main arguments that you need to be aware of:
+
+# Data: the (default) dataset to use for the plot 
+# Mapping: the aesthetic mappings 
+
+# When calling ggplot() we typically don’t call these arguments by their name and instead simply supply them in order.
+
+# Data
+#
+# The data argument obviously needs a dataset and this should usually come in the form of a data.frame or a tibble.
+# Let’s starts with a very simple data set, iris, that contains 4 measures + species name for each plant.
+
+# Mapping
+#
+# The mapping argument should be supplied with a call to the aes() function that lists the mappings between variables in your data and aesthetics of the plot.
+# Which aesthetics you choose to map to depends on what geoms you intend to use.
+# But for now, let’s assume that we want to map "Petal.Length" to the x axis, and "Petal.Width" to the y axis.
+# To do so, we simply use aes(x = Petal.Length, y = Petal.Width) as the input to the mapping argument.
+# Because the first two arguments of aes() are x and y, we can do without calling them explicitly.
+ggplot(data = iris,
+       mapping = aes(x = Petal.Length,
+                     y = Petal.Width))
+
+# Why does this result in a blank canvas? After all, we did tell ggplot to map Petal.Length to the x axis and Petal.Width to the y axis?
+# The answer is that we still haven’t told ggplot2 which layers we want to use.
+
+# Layers
+#
+# To add new layers to the main function we only need to 'add' (+) the code for the new layer.
+#
+# The aesthetic mapping is not enough by itself—we, it also need a layer to display our data.
+# In ggplot2, we accomplish this by adding (stacking) layers to the output of ggplot().
+# There are several ways to construct layers in ggplot, but the simplest and most common approach is to use the functions named geom_*() (such as geom_point()).
+# The names of these geom_*() functions are actually misnomers, given that the they in fact set up entire layers and not just the geoms.
+# To provide a layer with the point geom to the plot, you simply need to call the following lines.
+
+# Exercises:
+# 1) Generate a dotplot for Petal.Length ~ Petal.Width
+ggplot(iris, aes(x=Petal.Length, y=Petal.Width)) +
+  geom_point()
+# 2) Add a regression line (geom_smooth() with `formula = y ~ x` and method='lm'
+ggplot(iris, aes(x=Petal.Length, y=Petal.Width)) +
+  geom_point() +
+  geom_smooth(formula = y ~ x, method='lm')
+# 3) Map the speceies information to the color of the dots. Try first mapping it on geom_point and then mapping it on the main function ggplot()
+ggplot(iris, aes(x=Petal.Length, y=Petal.Width)) +
+  geom_point(aes(color=Species)) +
+  geom_smooth(formula = y ~ x, method='lm')
+ggplot(iris, aes(x=Petal.Length, y=Petal.Width, color=Species)) +
+  geom_point() +
+  geom_smooth(formula = y ~ x, method='lm')
+# 4) Change size and shape of dots
+ggplot(iris, aes(x=Petal.Length, y=Petal.Width, color=Species)) +
+  geom_point(size=4, shape=3) +
+  geom_smooth(formula = y ~ x, method='lm')
+# 5) Add a rectangle ( geom_rect() ) and fill it in green (?geom_rect)
+ggplot(iris, aes(x=Petal.Length, y=Petal.Width, color=Species)) +
+  #geom_rect(aes(xmin=0.9, xmax=2, ymin=0, ymax=0.75), alpha=.002, color=NA, fill="yellow") +      # ALERT! x and y from ggplot() function are still being mapped here. Meaning you are drowing 1 rectangle for each x+y from main function (alpha not working as expected due to overlapping rectangles)
+  geom_point(size=4, shape=3) +
+  geom_smooth(formula = y ~ x, method='lm') +
+  annotate(geom="rect", xmin=0.9, xmax=2, ymin=0, ymax=0.75, alpha=.15, color=NA, fill="yellow")
+  
+
+# single layer
+ggplot(iris, aes(Petal.Length, Petal.Width)) +
+  geom_point()
+
+# multiple layers
+ggplot(iris, aes(Petal.Length, Petal.Width)) +
+  geom_point() +
+  geom_line()
+
+# layers with diferent data and aesthetics
+ggplot(iris, aes(Petal.Length, Petal.Width)) +
+  geom_point() +
+  geom_line() +
+  geom_rect(mapping = aes(xmin=2, xmax=3, ymin=0, ymax=4, color="red", fill="green"))
+
+# diferences between mapping data to aesthetics and setting aesthetics values
+ggplot(iris, aes(Petal.Length, Petal.Width)) +
+  geom_point() +
+  geom_line() +
+  geom_rect(mapping = aes(xmin=2, xmax=3, ymin=0, ymax=4), color="red", fill="green")
+
+ggplot(iris, aes(Petal.Length, Petal.Width, color=Species)) +
+  geom_point()
+
+# overwriting aesthetics
+ggplot(iris, aes(Petal.Length, Petal.Width, color=Species)) +
+  geom_point(color="orange")
+
+# Aesthetics
+# Look at the documentation of the geom_point() function.
+?geom_point()
+# Under Aesthetics we can see that this layer understands the following aesthetics:
+#
+#   x
+#   y
+#   alpha
+#   colour
+#   fill
+#   group   
+#   shape
+#   size
+#   stroke
+
+# we can remap aesthetics in the desired layer
+ggplot(iris, aes(Petal.Length, Petal.Width)) +
+  geom_point(aes(shape = Species), alpha=0.2, color="red")
+
+# aesthetics are specific for each layer
+ggplot(iris, aes(Petal.Length, Petal.Width)) +
+  geom_point(aes(color=Species, size=Petal.Length), alpha=0.4, stroke=3) +
+  geom_line()
+
+# aesthetics mapped in ggplot() will be shared between all layers
+ggplot(iris, aes(Petal.Length, Petal.Width, color=Species)) +
+  geom_point(aes(size=Petal.Length), alpha=0.4, stroke=3) +
+  geom_line()
+
+# aesthetics can be specified and mapped in each layer
+ggplot(iris, aes(Petal.Length, Petal.Width, group=Species)) +
+  geom_point(aes(size=Petal.Length), alpha=0.4, stroke=3) +
+  geom_line(aes(color=Species), linewidth=1)
+
+
+##########################################################################################
+### geoms() ###
+
+# Exercises:
+# 1) Plot Species names instead of dots using geom_text. You will need to map Species names to `label`
+ggplot(iris, aes(x=Petal.Length, y=Petal.Width, label=Species)) +
+  geom_text()
+# 2) Generate a boxplot or violinplot for Petal.Length data with one box for each species
+ggplot(iris, aes(x=Species, y=Petal.Length)) +
+  geom_boxplot()
+# 3) Repeat the boxplot but now try to have all variables (Petal.Length, Petal.Width, Sepal.Length, Sepal.Width) in the same plot (*You need the long format to do this plot)
+miris <- melt(iris)
+ggplot(miris, aes(x=variable, y=value, color=Species, fill=Species)) +
+  geom_boxplot(alpha=.2)
+# 4) Plot the distribution of Petal.Length by species (geom_density())
+ggplot(iris, aes(x=Petal.Length, color=Species)) +
+  geom_density()
+# 5) Add the bar plot on top of the previous density plot
+ggplot(iris, aes(x=Petal.Length, color=Species)) +
+  geom_bar(aes(fill=Species), position = "dodge", alpha=.1) +
+  geom_density(linewidth=1)
+
+
+
+# More examples
+# geom point and line
+ggplot(iris, aes(Petal.Length, Petal.Width, color=Species)) +
+  geom_point(size=3) +
+  geom_line(size=1)
+
+# geom_smoth (regression line)
+ggplot(iris, aes(Petal.Length, Petal.Width, color=Species)) +
+  geom_point(size=3) +
+  geom_smooth(method = "lm", 
+              formula = y ~ x, 
+              alpha=.2,
+              ) +
+  geom_rug()
+
+
+# geom_boxplot / violin. aes X and Y are different for some geoms
+ggplot(iris, aes(Species, Petal.Length, color=Species, fill=Species)) +
+  geom_boxplot(alpha=.2)
+
+ggplot(iris, aes(Species, Petal.Length, color=Species, fill=Species)) +
+  geom_violin(alpha=.2)
+
+# multiple boxplot for each category || long formated data needed here
+meltedIris <- melt(iris, id.vars=c("Species"))
+ggplot(meltedIris, aes(variable, value, fill=Species)) +
+  geom_boxplot(alpha=.2)
+
+
+# geom_bar == geom_histogram / geom_density
+ggplot(iris, aes(Petal.Length, color=Species, fill=Species)) +
+  geom_bar(alpha=.2, position = "stack")
+
+ggplot(iris, aes(Petal.Length, color=Species, fill=Species)) +
+  geom_density(aes(linetype = Species), alpha=0, size=2) +
+  geom_bar(alpha=.2) +
+  geom_vline(aes(xintercept=2.5), color="magenta", linetype="dashed", size=1)
+
+
+# Bars and error bars
+df <- ToothGrowth
+df$dose <- as.factor(df$dose)
+head(df)
+# summarize data ( using library(dplyr) )
+df.summary <- df %>%
+  group_by(dose, supp) %>%
+  summarise(
+    sd = sd(len, na.rm = TRUE),
+    len = mean(len)
+  )
+df.summary
+ggplot(df.summary, aes(x=dose, y=len, ymin=len-sd, ymax=len+sd, fill=supp)) +
+  geom_bar(stat = "identity", position ="dodge") +
+  geom_errorbar(position = position_dodge(.9), width=.5, linewidth=0.7)
+
+
+# heatmaps
+head(faithfuld) # Waiting time between eruptions and the duration of the eruption for the Old Faithful geyser in Yellowstone National Park, Wyoming, USA. 
+ggplot(faithfuld, aes(waiting, eruptions)) +
+  geom_raster(aes(fill = density))
+
+# Dummy data
+x <- LETTERS[1:20]
+y <- paste0("var", seq(1,20))
+data <- expand.grid(X=x, Y=y)
+data$Z <- runif(400, 0, 5)
+
+# Heatmap 
+ggplot(data, aes(X, Y, fill= Z)) + 
+  geom_tile()
+
+
+# Fancy map plots
+# Prepare the data
+crimes <- data.frame(state = tolower(rownames(USArrests)), 
+                     USArrests)
+crimesm <- melt(crimes, id = 1)
+# Get map data
+require(maps) 
+map_data <- map_data("state")
+# Plot the map with Murder data
+ggplot(crimes, aes(map_id = state)) + 
+  geom_map(aes(fill = Murder), map = map_data) + 
+  expand_limits(x = map_data$long, y = map_data$lat) +
+  geom_text(aes(x=-85.46201, y=35.38968, label='alabama'), color="white")
+
+
+##########################################################################################
+### stats ###
+
+# To know which statistics are calculated on each stat_* function check the section 'Computed variables' on its help page
+# We can access this calculated values using after_stat()
+# ?stat_count
+
+# Exercises:
+# 1) Generate a barplot showing car counts per classes using mpg dataset. Show counts in percentage of the total. This will require a new mapping in the geom
+ggplot(mpg, aes(x=class)) +
+  stat_count() 
+# is the same than 
+ggplot(mpg, aes(x=class)) +
+  geom_bar()
+# geom_bar uses the default values from stat_count to generate the plot
+# we can access the statistics calculated by stat_count using after_stat()
+ggplot(mpg, aes(x=class)) +
+  geom_bar( aes( y = after_stat(100*count/sum(count)) ))
+
+
+
+# More examples with stat_'geom' and stat_summary || Check full examples here:https://ggplot2tutor.com/tutorials/summary_statistics
+ggplot(mpg) +
+  #geom_density(aes(x = hwy))
+  stat_density(aes(x = hwy,
+                   y = after_stat(scaled)))
+
+
+# stat_summary()
+ggplot(mtcars, aes(cyl, mpg)) +
+  geom_point() + 
+  geom_boxplot(aes(group=cyl), alpha=0) +
+  stat_summary(fun.data = "mean_cl_boot", colour = "red", linewidth = 2, size = 2)
+  
+  
+
+library(gapminder)
+# Dataset with information of different countries, including life expectancy
+gapminder
+# The bar chart does not show the mean or median life expectancy for all countries, but the sum of life expectancies for each country and year
+ggplot(gapminder, aes(x = year, y = lifeExp)) + 
+  geom_bar(stat="identity")
+
+# There is a possibility to calculate the average life expectancy of countries for each year using geom_bar.
+# All we have to do is specify a function that we want to calculate for the variable on the y-axis and additionally specify the argument stat = "summary"
+ggplot(gapminder, aes(x = year, y = lifeExp)) + 
+  geom_bar(fun = "mean", stat = "summary")
+
+# But our hands are tied with this implementation. For example, we cannot display the data as points or lines because they were created with the geom_bar
+# That's why stat_summary is so powerful. stat_summary allows us to display any kind of summary statistics through different visualizations
+ggplot(gapminder, aes(x = year, y = lifeExp)) + 
+  stat_summary(fun = "mean", geom = "bar", fill="steelblue", alpha=.4) +
+  stat_summary(geom = "errorbar", width = 1, color="black",     # we can also specify the confidence interval for errorbars like this: stat_summary(fun.data = "mean_cl_normal", fun.args = list(conf.int = .99), geom="errorbar")
+               fun.min = function(x) mean(x) - sd(x),
+               fun.max = function(x) mean(x) + sd(x)) +
+  stat_summary(fun = "mean", geom = "point", color="red", size=3) +
+  stat_summary(fun = "median", geom = "crossbar", color="green") +
+  theme_bw()
+
+ggplot(gapminder, aes(x = continent, y = lifeExp, fill = as.factor(year), group = year)) +
+  stat_summary(fun = "mean", geom = "bar", 
+               alpha = .6, position = position_dodge(0.95)) +
+  geom_point(position=position_dodge(0.95), aes(color=year)) +
+  stat_summary(fun = "mean", geom = "point", 
+               position = position_dodge(0.95),
+               size = 2, color="red") +
+  stat_summary(fun.data = "mean_cl_normal",
+               geom = "errorbar",
+               position = position_dodge(0.95),
+               width = .2, size=.7) +
+  scale_fill_viridis_d(name='year') + theme_minimal() +
+  coord_cartesian(ylim = c(35, 90))
+
+##########################################################################################
+### annotation ###
+# This function adds geoms to a plot, but unlike a typical geom function, the properties of annotations are not mapped from variables of a data frame,
+# but are instead passed in as vectors. This is useful for adding small annotations (such as text labels)
+
+
+# Using the dot plot from the first examples...
+p <- ggplot(iris, aes(Petal.Length, Petal.Width, color=Species)) +
+  geom_point(size=3) +
+  stat_smooth(method = "lm", 
+              formula = y ~ x, 
+              geom = "smooth", 
+              alpha=.2)
+p
+
+# Exercieses:
+# 1) Annotate the names of the species inside the plot
+p + annotate(geom = "text", x=1.5, y=0.75, label = "Setosa", col="red") +
+  annotate(geom = "text", x=4,   y=0.75, label = "Versicolor", col="darkgreen") +
+  annotate(geom = "text", x=6,   y=1.25, label = "Virginica", col="blue")
+  
+
+# 2) Highlight dots of setosa by annotating a rectangle that cover all dots
+p + annotate("rect", xmin = 0.75, xmax = 2, ymin = 0, ymax = 0.75, alpha = .1, fill="yellow")
+  
+
+
+# More examples
+p <- ggplot(iris, aes(Petal.Length, Petal.Width, color=Species)) +
+            geom_point(size=3) +
+            stat_smooth(method = "lm", 
+                        formula = y ~ x, 
+                        geom = "smooth", 
+                        alpha=.2)
+p
+
+p + annotate(geom = "text", x=1.5, y=0.75, label = "Setosa", col="red") +
+    annotate(geom = "text", x=4,   y=0.75, label = "Versicolor", col="darkgreen") +
+    annotate(geom = "text", x=6,   y=1.25, label = "Setosa", col="blue")
+
+p + annotate("rect", xmin = 0.75, xmax = 2, ymin = 0, ymax = 0.75, alpha = .2) +
+    annotate("segment", x = 2, xend = 3, y = 2, yend = 0, colour = "steelblue")
+  
+
+# using vectors to add annotations
+maxSetosaPL <- max(iris[iris$Species=="setosa", "Petal.Length"])
+maxSetosaPW <- max(iris[iris$Species=="setosa" & iris$Petal.Length==maxSetosaPL, "Petal.Width"])
+maxVersicolorPL <- max(iris[iris$Species=="versicolor", "Petal.Length"])
+maxVersicolorPW <- max(iris[iris$Species=="versicolor" & iris$Petal.Length==maxVersicolorPL, "Petal.Width"])
+maxVirginicaPL <- max(iris[iris$Species=="virginica", "Petal.Length"])
+maxVirginicaPW <- max(iris[iris$Species=="virginica" & iris$Petal.Length==maxVirginicaPL, "Petal.Width"])
+
+maxX <- c(maxSetosaPL, maxVersicolorPL, maxVirginicaPL)
+maxY <- c(maxSetosaPW, maxVersicolorPW, maxVirginicaPW)
+
+p + annotate(geom="text", x=maxX, y=maxY+0.05, label=maxX, col=c("magenta", "yellowgreen", "purple"))
+
+##########################################################################################
+### Multi plots ###
+
+# Exercises:
+# 1) Plot distribution for each measure (Sepal.Length, Sepal.Width, ...) in different rows, map Species to colors
+miris <- melt(iris, id.vars=c("Species"))
+ggplot(miris, aes(x=value, color=Species)) +
+  geom_density() +
+  facet_grid(variable ~ .)
+# 2) Now split the previous plot by placing each Species in different columns (keep variables in different row)
+ggplot(miris, aes(x=value, color=Species)) +
+  geom_density() +
+  facet_grid(variable ~ Species)
+# 3) Make the plots easier to read by adjusting the Y scale in each row (check ?facet_grid to find the correct option)
+ggplot(miris, aes(x=value, color=Species)) +
+  geom_density() +
+  facet_grid(variable ~ Species, scales="free_y")
+
+
+# facet_grid draws 1 plot on a canvas. We can draw different plots on 1 canvas using grid.arrange (libraries grid & gridExtra)
+# Shape of grid can be specified by a layout_matrix 
+# We need to pass a list of ggplot objects (or 'grobs') as input
+# *A graphical object (“grob”) is a description of a graphical item. These basic classes provide default behaviour for validating, drawing, and modifying graphical objects.
+
+# Exercises:
+# 1) Save 2 plots into 2 different grob objects
+p1 <- ggplot(miris, aes(x=value, color=Species)) +
+  geom_density()
+p2 <- ggplot(miris, aes(x=value, color=Species)) +
+  geom_density() +
+  facet_grid(variable ~ Species, scales="free_y")
+# 2) Use grid.arrange() to plot the previous 2 objects together, either in 2 columns or in two rows
+grid.arrange(p1, p2)
+# 3) Draw the 2 plots with the same size and without legend ( ... + theme(legend.position = "none") ) and make them share the same legend (Hint: use the following code to extract the legend as a grob)
+legend <- get_only_legend(p1)
+gs <- list(p1 + theme(legend.position = "none"), legend, p2 + theme(legend.position = "none"))
+grid.arrange(grobs = gs, nrow=2, ncol=2)
+# OR
+gs <- list(p1 + theme(legend.position = "none"), p2 + theme(legend.position = "none"), legend)
+lay <- rbind(c(1,1,1,3),
+             c(2,2,2,3))
+grid.arrange(grobs = gs, layout_matrix = lay)
+
+
+# function to extract legend from plot 
+get_only_legend <- function(plot) { 
+  plot_table <- ggplot_gtable(ggplot_build(plot)) 
+  legend_plot <- which(sapply(plot_table$grobs, function(x) x$name) == "guide-box") 
+  legend <- plot_table$grobs[[legend_plot]] 
+  return(legend) 
+} 
+
+
+# More examples
+# Multiple variables in rows
+mg <- ggplot(mtcars, aes(x = mpg, y = wt)) + geom_point()
+mg + facet_grid(vs + am ~ gear, margins = TRUE)
+
+
+pairs(iris)
+library(GGally) 
+ggpairs(iris, mapping = aes(color=Species, alpha=.5))
+ggpairs(iris, upper = list(continuous = wrap("density", alpha = 0.5)))
+?ggpairs
+
+# Split by 1 category
+ggplot(iris, aes(Petal.Length, color=Species, fill=Species)) +
+  geom_density(alpha=0, size=2) +
+  geom_bar(alpha=.2) +
+  facet_wrap(Species ~ .)
+
+p1 <- ggplot(iris, aes(Petal.Length, Petal.Width, color=Species)) +
+          geom_point(size=3) +
+          facet_wrap(. ~ Species)
+p1
+
+# Split by 2 categories
+meltedIris <- melt(iris, id.vars=c("Species"))
+head(meltedIris)
+p2 <- ggplot(meltedIris, aes(value, color=Species, fill=Species)) +
+          geom_density(alpha=.2) +
+          facet_grid(Species ~ variable)
+p2
+
+ggplot(meltedIris, aes(value, color=Species, fill=Species)) +
+  geom_density(alpha=.2) +
+  facet_grid(variable ~ Species, scales = "free_y")
+
+# diferent plots in 1 canvas: grid.arrange
+library(grid)
+library(gridExtra)
+# dummy example
+gs <- lapply(1:9, function(ii) grobTree(rectGrob(gp=gpar(fill=ii, alpha=0.5)), textGrob(ii)))
+grid.arrange(grobs=gs, ncol=4, 
+             top="top label", bottom="bottom\nlabel", 
+             left="left label", right="right label")
+
+lay <- rbind(c(1,1,1,2,3),
+             c(1,1,1,4,5),
+             c(6,7,8,9,9))
+grid.arrange(grobs = gs, layout_matrix = lay)
+
+p1 <- ggplot(iris, aes(Petal.Length, color=Species, fill=Species)) +
+  geom_density(alpha=0, size=2) +
+  geom_bar(alpha=.2) +
+  facet_wrap(Species ~ .)
+p2 <- ggplot(meltedIris, aes(value, color=Species, fill=Species)) +
+  geom_density(alpha=.2) +
+  facet_grid(Species ~ variable)
+grid.arrange(p1, p2, nrow = 1)
+
+grid.arrange(grobs = list(p1, p1, p2),
+             widths = c(2, 1, 1),
+             layout_matrix = rbind(c(1, 2, NA),
+                                   c(3, 3, 3)))
+
+p1 <- ggplot(iris, aes(Petal.Length, color=Species, fill=Species)) +
+  geom_density(alpha = 0.3) +
+  theme_minimal() + theme(legend.position = "none") +
+  theme(axis.title.x = element_blank(),
+        axis.text.x  = element_blank(),
+        axis.ticks.x = element_blank(),
+        plot.margin = unit(c(0,0.2,0,0.5), "cm"),)
+
+p2 <- ggplot(iris, aes(y=Petal.Width, color=Species, fill=Species)) +
+  geom_density(alpha = 0.3) +
+  theme_minimal() + theme(legend.position = "none") +
+  theme(axis.title.y = element_blank(),
+        axis.text.y  = element_blank(),
+        axis.ticks.y = element_blank())
+
+p3 <- ggplot(iris, aes(x=Petal.Length, y=Petal.Width, color=Species, fill=Species)) +
+  geom_point() + theme_minimal() + theme( legend.position = "none" )
+
+# function to extract legend from plot 
+get_only_legend <- function(plot) { 
+  plot_table <- ggplot_gtable(ggplot_build(plot)) 
+  legend_plot <- which(sapply(plot_table$grobs, function(x) x$name) == "guide-box") 
+  legend <- plot_table$grobs[[legend_plot]] 
+  return(legend) 
+} 
+
+# extract legend from plot1 using above function 
+legend <- get_only_legend(p1 + theme(legend.position = "right"))
+
+grid.arrange(grobs = list(p1, p2, p3, legend),
+             widths = c(2, 1, 1),
+             heights = c(1,3),
+             common.legend = TRUE,
+             legend = "right",
+             layout_matrix = rbind(c(1, 1, 4), 
+                                   c(3, 3, 2)))
+
+##########################################################################################
+###  Scales & Coordinates ###
+
+# Coordinates allows us to transform mappings. 
+# For example:
+#   - a cartesian coordinates system allows us to zoom in and out of a plot
+#   - a polar coordinate system interprets x and y as angles and radius
+
+# The commands for scales follow the pattern scale_'aesthetic'_'mehtod'()
+
+# Exercises:
+# 1.1) Using Sepal.Length draw a bar plot and fill the bars by species
+ggplot(iris, aes(x=Sepal.Length, fill=Species)) +
+  geom_bar(alpha=.7)
+# 1.2) Scale x axis into bins
+ggplot(iris, aes(x=Sepal.Length, fill=Species)) +
+  geom_bar(position="dodge", alpha=.7) +
+  scale_x_binned()
+# 1.3) zoom in by scaling the y axis (scale_y_continuous) and set the limits to show only data below 10 counts
+ggplot(iris, aes(x=Sepal.Length, fill=Species)) +
+  geom_bar(position="dodge", alpha=.7) +
+  scale_x_binned() +
+  scale_y_continuous(limits = c(0,10))
+# 1.4) repeat the zoom in but this time using coord_cartesian(). Compare results with previous step
+ggplot(iris, aes(x=Sepal.Length, fill=Species)) +
+  geom_bar(position="dodge", alpha=.7) +
+  scale_x_binned() +
+  coord_cartesian(ylim = c(0,10))
+
+# 2.1) Using the following exponential data transform the axis to obtain a straight line (diagonal)
+data <- data.frame(x=1:100, y=10**c(1:100))
+ggplot(data, aes(x=x, y=y)) + geom_point() + scale_y_log10(breaks = c(0, 1e20, 1e50, 1e90, 1e100))
+
+# 3.1) Use the following data to create a bar chart with only one stacked bar, and fill by group (hint: You can always map "" to a aesthetic)
+data <- data.frame(
+  group=LETTERS[1:5],
+  value=c(13,7,9,21,2)
+)
+ggplot(data, aes(x="", y=value, fill=group)) +
+  geom_bar(stat="identity")
+# 3.2) Transform the y axis into angles using coord_polar(...)
+ggplot(data, aes(x="", y=value, fill=group)) +
+  geom_bar(stat="identity") +
+  coord_polar(theta = "y") +
+  theme_minimal()
+
+
+# More examples
+# Coordinates allows us to transform mappings. For example, a polar coordinate system interprets x and y as angles and radius
+ggplot(mpg) +
+  geom_bar(aes(x = class, fill = class)) +
+  coord_polar()
+
+# Changing what is mapped to angle gives a very different plot
+ggplot(mpg) +
+  geom_bar(aes(x = class, fill = class)) +
+  coord_polar(theta = 'y') +
+  expand_limits(y = 70)
+
+# Zoomed in section over main plot
+# dummy data
+time <- seq(from = 0,
+            to = 10,
+            by = 0.5)
+line_1 <- c(0, 0, 0, 66, 173, 426, 1440, 800, 1200, 400, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+line_2 <- c(0, 0, 0, 0, 0, 0, 0, 0, 1000, 25000, 5000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+df <- data.frame(time, line_1, line_2)
+
+# Main plot
+p1 <-  ggplot(data = df, aes(x = time)) +
+          geom_line(aes(y = line_2), color = "red") +
+          geom_line(aes(y = line_1), color = "blue") +
+          theme_bw()
+# Section with a zoom \ with new plot or with a zoom in of the original plot
+p2 <-  ggplot(data = df, aes(x = time)) +
+          geom_line(aes(y = line_1), color = "blue") +
+          xlim (1, 5) +
+          ylim (0, 1500) +
+          theme_bw()
+p2 <- p1 + coord_cartesian(ylim = c(0,1500), xlim=c(1,5))
+# Overlapping of plots
+p1 + 
+  geom_rect(aes(xmin = 1, xmax = 5, ymin = 0, ymax = 1500), color = "black", alpha = 0) +                     # Rectangle showing section from main plot that will be zoomed in
+  annotation_custom(ggplotGrob(p2), xmin = 0, xmax = 4, ymin = 5000, ymax = 20000) +                          # Zoomed in plot
+  geom_rect(aes(xmin = 0, xmax = 4, ymin = 5000, ymax = 20000), color='black', linetype='dashed', alpha=0) +  # Rectangle flanking the zoomed in plot
+  geom_path(aes(x,y,group=grp),                                                                               # Segment joining both rectangles
+            data=data.frame(x = c(1,0,5,4), y=c(1500,5000,1500,5000),grp=c(1,1,2,2)),
+            linetype='dashed')
+
+# Piecharts and donut plots
+# A pie chart is nothing else than a bar plot with polar coordinates. Let's see how to plot it
+# Create Data
+data <- data.frame(
+  group=LETTERS[1:5],
+  value=c(13,7,9,21,2)
+)
+
+# Basic stacked bar plot
+ggplot(data, aes(x="", y=value, fill=group)) +
+  geom_bar(stat="identity", width=1)
+
+# Basic piechart
+ggplot(data, aes(x="", y=value, fill=group)) +
+  geom_bar(stat="identity", width=1) +
+  coord_polar("y", start=0)
+
+# Donut chart and pie chart are built using similar process in R
+
+# There is no specific geom to build donut charts with ggplot2.\
+# The trick is to build a stacked barplot and use coord_polar() to make it circular.
+
+data <- data.frame(
+  group=LETTERS[1:5],
+  value=c(13,7,9,21,2)
+)
+hsize=4
+library(ggrepel)
+ggplot(data, aes(x = hsize, y = value, fill = group)) +
+  geom_col(color="black", show.legend = FALSE) +
+  #geom_col(aes(x=2), color="black", show.legend = FALSE) +
+  geom_text(aes(label = group), size = 6, position = position_stack(vjust = 0.5), show.legend = FALSE) +
+  geom_label_repel(aes(label = paste(floor(100*value/sum(value)), "%")), position = position_stack(vjust = 0.5), show.legend = FALSE) +
+  xlim(c(0.2, hsize + 0.5)) +
+  coord_polar(theta = "y") +
+  scale_fill_brewer(palette = 4) +
+  theme_void()
+
+
+##########################################################################################
+### colors & themes ###
+
+# manual control of color/fill scales
+# The comands follow the pattern scale_'aesthetic'_'mehtod'()
+# scale_fill_distiller() # to provide a ColorBrewer palette
+# scale_color_viridis()  # to use Viridis. Do not forget discrete=FALSE for a continuous variable.
+# scale_fill_viridis_[b: binary; c:continuos; d:discrete]()
+
+# scale_fill_manual()    # to provide manual colors to fill
+# list of color names for ggplot2: http://sape.inf.usi.ch/quick-reference/ggplot2/colour
+
+# Dummy data
+x <- LETTERS[1:20]
+y <- paste0("var", seq(1,20))
+data <- expand.grid(X=x, Y=y)
+data$Z <- runif(400, 0, 5)
+
+# Exercises: 
+# 1) Using the data above draw a heatmap (geom_tile()) 
+ggplot(data, aes(x=X, y=Y, fill=Z)) +
+  geom_tile()
+# 2) Change the filling using different scale_*
+ggplot(data, aes(x=X, y=Y, fill=Z)) +
+  geom_tile() +
+  scale_fill_distiller(palette = 3)
+# 3) Use iris data to draw again a box plot and change color and fill manually
+ggplot(iris, aes(x="", y=Petal.Length, color=Species, fill=Species)) +
+  geom_boxplot(aes(alpha=Species)) +
+  scale_fill_manual(values = c("darkred", "seagreen", "steelblue")) +
+  scale_color_manual(values = c("darkred", "seagreen", "steelblue")) +
+  scale_alpha_manual(values = c(0.1, 0.6, 1))
+
+
+# Any other aesthetic in the plot can be modify using theme
+# Inside theme(...) you can control aesthetics for panel, plot, axis, legend, ...
+# Each aesthetic is defined by an `element_'shape'` constructor (text, line, blank, ...)
+# e.g. ggplot() + theme(axis.text = element_text(size=12)) -> To control the fontsize of (both) axis texts 
+# There are some predefined themes in ggplot such as theme_bw(). theme_minimal(), theme_classic(), ...
+
+# Exercises:
+# 1) Modify the aesthetics of your last plot to make it more appealing
+
+
+
+# More examples
+# scale_fill_viridis_[b: binary; c:continuos; d:discrete]()
+ggplot(data, aes(X, Y, fill= Z)) + 
+  geom_tile() +
+  scale_fill_viridis_c()
+
+ggplot(data, aes(X, Y, fill= Z)) + 
+  geom_tile() +
+  scale_fill_gradient(low = "red", high = "darkgreen")
+
+ggplot(data, aes(X, Y, fill= Z)) + 
+  geom_tile() +
+  #`type` must be one of "seq", "div", or "qual".
+  scale_fill_distiller(type = "seq", palette = 2)
+
+ggplot(data, aes(X, Y, fill= Z)) + 
+  geom_tile() +
+  scale_fill_distiller(type = "div", palette = 2)
+
+ggplot(iris, aes(Species, Petal.Length, color=Species, fill=Species)) +
+  geom_boxplot(alpha=.2) +
+  scale_color_manual(values = c("sienna", "seagreen", "indianred2")) +
+  scale_fill_manual(values = c("chocolate2", "olivedrab3", "tomato3"))
+
+
+
+
+# Title and labs
+p <- ggplot(iris, aes(Species, Petal.Length, color=Species, fill=Species)) +
+  geom_boxplot(alpha=.2) +
+  scale_color_manual(values = c("sienna", "seagreen", "indianred2")) +
+  # Hide legend for fill_manual
+  scale_fill_manual(values = c("chocolate2", "olivedrab3", "tomato3"), guide = "none")
+
+p + ggtitle("Distribution of petal length") +
+    xlab("Species name") +
+    ylab("Petal length (cm)")
+
+p + labs(title="Distribution of petal length",
+         x="Species name", y="Petal length (cm)")
+
+p + labs(title="Distribution of petal length",
+         x="Species name", y="Petal length (cm)",
+         fill="Fill Species", color="Color Species") +
+    theme(plot.title = element_text(color="darkred", size=14, face="bold.italic", hjust = .5),
+          axis.title.x = element_text(size=14, face="bold", margin = margin(25,0,0,0, "pt")),
+          axis.title.y = element_text(size=14, face="bold", margin = margin(0,25,0,0, "pt")),
+          axis.text.x = element_text(size= 12, angle = 45, vjust = .5),
+          axis.text.y = element_text(size= 12),
+          axis.ticks = element_line(colour = "grey", linewidth = 2),
+          axis.line = element_line(colour = "grey"),
+          panel.background = element_rect(fill = "white"),
+          panel.grid.major.y = element_line(colour = "darkgrey", linewidth=1),
+          panel.grid.minor.y = element_line(colour = "grey", linewidth=.5),
+          plot.margin = unit(1:4, "cm"),
+          plot.background = element_rect(fill = "white"),
+          legend.background = element_rect(color="lightgrey"),
+          legend.text.align = 1,
+          legend.position = "right",
+          legend.title = element_text(size=18),
+          legend.text = element_text(size=14)
+          )
+    
+p + theme_bw() +
+    theme(axis.text = element_text(size=12))
+
+p + theme_classic()
+p + theme_minimal()
+p + theme_dark()
+p + theme_linedraw()
+
+# for many plots shareing same themes
+pTheme <- theme(plot.title = element_text(color="darkred", size=14, face="bold.italic", hjust = .5),
+                axis.title.x = element_text(size=14, face="bold", margin = margin(25,0,0,0, "pt")),
+                axis.title.y = element_text(size=14, face="bold", margin = margin(0,25,0,0, "pt")),
+                axis.text.x = element_text(size= 12, angle = 45, vjust = .5),
+                axis.text.y = element_text(size= 12),
+                axis.ticks = element_line(colour = "grey", size = 2),
+                axis.line = element_line(colour = "grey"),
+                panel.background = element_rect(fill = "white"),
+                panel.grid.major.y = element_line(colour = "darkgrey", linewidth=1),
+                panel.grid.minor.y = element_line(colour = "grey", linewidth=.5),
+                plot.margin = unit(1:4, "cm"),
+                plot.background = element_rect(fill = "white"),
+                legend.background = element_rect(color="lightgrey"),
+                legend.text.align = 1,
+                legend.position = "right",
+                legend.title = element_text(size=18),
+                legend.text = element_text(size=14))
+
+p + pTheme
+p1 + pTheme
+p2 + pTheme
+
+
+##########################################################################################
+### Interactive plots ###
+library(plotly)
+ggplotly(p1)
+
+
+##########################################################################################
+### Useful examples ###
+
+## Find plenty of examples here: https://r-graph-gallery.com/index.html
+## Some of the following examples require extra libraries
+## This libraries allow you to use new plotting functions similar to ggplot2. They also follow the Grammar of Graphic (same as ggplot2)
+
+
+
+## Create your own legend
+#create data frame
+df <- data.frame(x=c(1, 2, 2, 3, 5, 6, 8, 8, 9, 9, 10, 11, 12, 15, 15),
+                 y=c(2, 3, 3, 4, 5, 5, 6, 7, 8, 8, 9, 10, 16, 19, 28))
+
+#create plot with three fitted regression models
+ggplot(df, aes(x, y)) +
+  geom_point() +
+  geom_smooth(se=FALSE, aes(color='Linear')) +
+  geom_smooth(formula=y~poly(x, 2), se=FALSE, aes(color='Quadratic')) +
+  geom_smooth(formula=y~poly(x, 3), se=FALSE, aes(color='Cubic')) +
+  scale_color_manual(name='Regression Model',
+                     breaks=c('Linear', 'Quadratic', 'Cubic'),
+                     values=c('Cubic'='pink', 'Quadratic'='blue', 'Linear'='purple'))
+
+
+
+
+## Time series
+
+# Dummy data
+set.seed('12345')
+data <- data.frame(
+  day = as.Date("2017-06-14") - 0:364,
+  value = runif(365) + seq(-140, 224)^2 / 10000
+)
+
+ggplot(data, aes(x=day, y=value, color=value)) +
+  geom_line() + 
+  geom_point() +
+  annotate(geom="text", x=as.Date("2016-09-9"), y=1.9, 
+           label="Value dropped below 2\non September 10th, 2016", hjust=1.2) +
+  annotate(geom="point", x=as.Date("2016-09-10"), y=1.9, size=10, shape=21, color="red", fill="transparent") +
+  xlab("") + 
+  scale_x_date(date_labels = "%Y %b %d", date_minor_breaks = "2 day") +
+  theme_bw() +
+  #You can zoom in into specific time frames using scale_x_date(limit=...)
+  scale_x_date(limit=c(as.Date("2016-06-01"),as.Date("2017-1-1")))
+
+# Dual axis
+data <- data.frame(
+  day = as.Date("2019-01-01") + 0:99,
+  temperature = runif(100) + seq(1,100)^2.5 / 10000,
+  price = runif(100) + seq(100,1)^1.5 / 10
+)
+
+ggplot(data, aes(x=day)) +
+  geom_line( aes(y=temperature), size = 2, color = "#69b3a2") + 
+  # Deivide price by 10 to fit better in the plot
+  geom_line( aes(y=price / 10), size = 2, color = "steelblue") +
+  scale_y_continuous(
+    name = "Temperature (Celsius °)",
+    # add secondary axis and transform it by multiplying by 10 to scale back the values to normal
+    sec.axis = sec_axis( trans=~.*10, name="Price ($)")) +
+  theme_bw() +
+  theme(axis.title.y = element_text(color = "#69b3a2", size=13, hjust = 1),
+        axis.title.y.right = element_text(color = "steelblue", size=13, hjust = 0)) +
+  ggtitle("Temperature down, price up")
+
+# Time points
+df <- ToothGrowth
+df$dose <- as.factor(df$dose)
+# generate data for polygon with standard deviation / standard error
+dfsummary <- df %>% group_by(supp, dose) %>% summarise(sd = sd(len), mean=mean(len), n = n(), se = sd / sqrt(n))
+pl <- as.data.frame(cbind( supp = c( rep( c(rep("OJ", 3), rep("VC", 3)), 2) ), x=c(0.5, 1, 2, 0.5, 1, 2, 0.5, 1, 2, 0.5, 1, 2)))
+# for se
+polygon <- cbind(pl, y=c(dfsummary$mean+dfsummary$se, dfsummary$mean-dfsummary$se))
+# for sd
+polygon <- cbind(pl, y=c(dfsummary$mean+dfsummary$sd, dfsummary$mean-dfsummary$sd))
+polygon <- polygon[c(1,2,3,4,5,6,9,8,7,12,11,10),]
+
+ggplot(df, aes(x=dose, y=len, color=supp, group=supp)) +
+  geom_point(position=position_dodge(.1)) +
+  geom_smooth(method = "lm", formula = 'y ~ x', alpha = .2)
+
+ggplot(df, aes(x=dose, y=len, color=supp, group = supp)) +
+  geom_point(position=position_dodge(.1)) +
+  stat_summary(geom = "line", fun = "mean", linewidth=1, position=position_dodge(.1)) +
+  stat_summary(geom = "errorbar", fun.data = "mean_se", width = .1, alpha=.5, linewidth=1, position=position_dodge(.1)) +
+  geom_polygon(data = polygon,
+               mapping = aes(x=x, y=y, group=supp, fill=supp), color=NA,
+               alpha = .1, position=position_dodge(.1)
+               ) +
+  theme_bw()
+
+
+## Volcano plot
+library(ggrepel)
+# Get data 
+download.file("https://raw.githubusercontent.com/biocorecrg/CRG_RIntroduction/master/de_df_for_volcano.rds", "de_df_for_volcano.rds", method="curl")
+tmp <- readRDS("de_df_for_volcano.rds")
+
+# remove rows that contain NA values
+de <- tmp[complete.cases(tmp), ]
+
+# add a column of NAs for DifferentialExpressed flag
+de$diffexpressed <- "NO"
+
+# if log2Foldchange > 0.6 and pvalue < 0.05, set as "UP" 
+de$diffexpressed[de$log2FoldChange > 0.6 & de$pvalue < 0.05] <- "UP"
+
+# if log2Foldchange < -0.6 and pvalue < 0.05, set as "DOWN"
+de$diffexpressed[de$log2FoldChange < -0.6 & de$pvalue < 0.05] <- "DOWN"
+
+# Create a new column "delabel" that will contain the name of genes differentially expressed (NA in case they are not)
+de$delabel <- NA
+de$delabel[de$diffexpressed != "NO"] <- de$gene_symbol[de$diffexpressed != "NO"]
+
+# Plot (theme 1)
+ggplot(data=de, aes(x=log2FoldChange, y=-log10(pvalue), color=diffexpressed, label=delabel)) +
+  geom_point() +
+  theme_minimal() +
+  geom_text_repel(show.legend = FALSE) +
+  # Add lines for thresholds
+  geom_vline(xintercept=c(-0.6, 0.6), col="red") +
+  geom_hline(yintercept=-log10(0.05), col="red") +
+  # Change point color
+  scale_color_manual(values=c("UP"="blue", "NO"="black", "DOWN"="red"))
+
+# Plot (theme 2)
+ggplot(de, aes(x = log2FoldChange, y = -log10(pvalue), fill = diffexpressed, size = diffexpressed, alpha = diffexpressed, label=delabel)) + 
+  geom_point(shape = 21, colour = "black") +
+  geom_text_repel(size = 4, show.legend = FALSE) +
+  geom_hline(yintercept = -log10(0.05), linetype = "dashed") + 
+  geom_vline(xintercept = c(-0.6, 0.6), linetype = "dashed") +
+  theme_classic() +
+  scale_fill_manual(values = c("UP" = "#ffad73", "DOWN" = "#26b3ff", "NO" = "grey") ) +
+  scale_size_manual(values = c("UP" = 2, "DOWN" = 2, "NO" = 1)) +
+  scale_alpha_manual(values = c("UP" = 2, "DOWN" = 2, "NO" = 1)) +
+  scale_x_continuous(breaks = c(seq(-1, 1, 0.2)), limits = c(-1, 1)) 
+
+
+
+
+## Genomes and annotations
+library(gggenes)
+dummies <- make_alignment_dummies(
+  example_genes,
+  aes(xmin = start, xmax = end, y = molecule, id = gene),
+  on = "genE"
+)
+
+ggplot(example_genes, aes(xmin = start, xmax = end, y = molecule, fill = gene, label = gene)) +
+  geom_gene_arrow(aes(forward = orientation), arrowhead_height = unit(3, "mm"), arrowhead_width = unit(1, "mm")) +
+  facet_wrap(~ molecule, scales = "free", ncol = 1) +
+  geom_blank(data = dummies) +   # To align plot to a specific gene
+  geom_gene_label(align = "left") +
+  scale_fill_brewer(palette = "Set3") +
+  theme_genes()
+
+subg8 <- example_subgenes[example_subgenes$molecule=="Genome8" & example_subgenes$gene %in% c("genE", "genF"),]
+mutations <- data.frame(molecule = "Genome8", position = c(1600, 2000, 2600), type = "mutation", name = c("mut1", "mut2", "mut3"), forward = NA)
+
+ggplot(subg8) +
+  geom_feature(
+    data = mutations,
+    aes(x = position, y = molecule, forward = forward)
+  ) +
+  geom_feature_label(
+    data = mutations,
+    aes(x = position, y = molecule, label = name, forward = forward), size = 10,
+  ) +
+  geom_gene_arrow(aes(xmin = start, xmax = end, y = molecule), fill="white") + 
+  geom_subgene_arrow(data = subg8,
+                     aes(xmin = start, xmax = end, y = molecule, fill = gene,
+                         xsubmin = from, xsubmax = to), color="black", alpha=.7) +
+  geom_gene_label(aes(xmin = start, xmax = end, y = molecule, label=gene), align = "left") +
+  theme_genes() 
+
+
+
+
+## 2d Histogram
+
+# Data
+a <- data.frame( x=rnorm(20000, 10, 1.9), y=rnorm(20000, 10, 1.2) )
+b <- data.frame( x=rnorm(20000, 14.5, 1.9), y=rnorm(20000, 14.5, 1.9) )
+c <- data.frame( x=rnorm(20000, 9.5, 1.9), y=rnorm(20000, 15.5, 1.9) )
+data <- rbind(a,b,c)
+
+
+# Plots
+ggplot(data, aes(x=x, y=y) ) +
+  geom_bin2d( bins = 70) +
+  scale_fill_continuous(type = "viridis") +
+  theme_bw()
+
+ggplot(data, aes(x=x, y=y) ) +
+  geom_hex(bins = 70) +
+  scale_fill_continuous(type = "viridis") +
+  theme_bw()
+
+# Area + contour
+ggplot(data, aes(x=x, y=y) ) +
+  stat_density_2d(aes(fill = after_stat(level)), geom = "polygon", colour="white") +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0))
+
+
+
+
+## Heatmaps and dendrograms
+# Read data
+otter <- read.csv(file = "https://jcoliver.github.io/learn-r/data/otter-mandible-data.csv")
+otter <- otter[otter$species %in%  c("A. cinerea", "L. canadensis"), ]
+
+# Scale values so measurements have a mean value of 0 and a variance of 1.
+otter_scaled <- otter
+otter_scaled[, c(4:9)] <- scale(otter_scaled[, 4:9])
+
+# Run clustering
+otter_matrix <- as.matrix(otter_scaled[, -c(1:3)])
+rownames(otter_matrix) <- otter_scaled$accession
+otter_dendro <- as.dendrogram(hclust(d = dist(x = otter_matrix)))
+
+# Create dendro
+library(ggdendro)
+dendro_plot <- ggdendrogram(data = otter_dendro, rotate = TRUE) +
+  scale_x_discrete(expand = c(0.01,0)) +
+  theme(plot.margin = unit(c(1,0,1,0), "cm"))  
+#dendro_plot
+
+# Prepare data for heatmap
+otter_long <- pivot_longer(data = otter_scaled,
+                           cols = -c(species, museum, accession),
+                           names_to = "measurement",
+                           values_to = "value")
+otter_long$accession <- factor(x = otter_long$accession,
+                               levels = otter_scaled$accession[otter_order], 
+                               ordered = TRUE)
+
+heatmap_plot <- ggplot(data = otter_long, aes(x = measurement, y = accession)) +
+  geom_tile(aes(fill = value)) +
+  scale_fill_gradient2() +
+  scale_y_discrete(position = "right") +
+  theme(axis.text.y = element_text(size = 10),
+        axis.title.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        legend.position = "left",
+        plot.margin = unit(c(1,0,1,0), "cm"))
+#heatmap_plot
+
+grid.arrange(heatmap_plot, dendro_plot, layout_matrix = rbind(c(1,1,1,2),
+                                                              c(1,1,1,2)))
+
+
+
+
+## Phylogenetic Trees
+# Full documentation here: https://yulab-smu.top/treedata-book/index.html
+library("treeio")
+library("ggtree")
+
+nwk <- system.file("extdata", "sample.nwk", package="treeio")
+tree <- read.tree(nwk)
+
+ggplot(tree, aes(x, y)) + 
+  geom_tree() +
+  theme_tree()
+
+
+# Or
+ggtree(tree, color="firebrick", size=1, linetype="dotted") +
+  geom_point(aes(shape=isTip, color=isTip), size=3) 
+
+ggtree(tree, color="firebrick", size=1, linetype="dotted", layout="circular") +
+  geom_nodepoint(color="#b5e521", alpha=1/4, size=10) +
+  geom_tippoint(color="#FDAC4F", shape=8, size=3) +
+  geom_tiplab(color='firebrick', hjust = -0.5)
+
+
+
+
+## Networks
+
+library(ggraph)
+library(tidygraph)
+library(igraph)
+
+# Create graph from highschool friendships data
+network <- as_tbl_graph(highschool) %>% 
+  mutate(Popularity = centrality_degree(mode = 'in'))
+
+# Not specifying the layout - defaults to "auto"
+ggraph(network) + 
+  geom_edge_link(aes(colour = factor(year))) + 
+  geom_node_point(aes(size = Popularity, color=Popularity), alpha=.8) +
+  facet_grid(~year) +
+  theme_bw()
+
+# Make it interactive (for year = 1957)
+library(networkD3)
+links <- network %>% activate(edges) %>% data.frame() %>% mutate(from = from - 1, to = to - 1)
+nodes <- network %>% activate(nodes) %>% data.frame() %>% mutate(name = as.numeric(name) - 1, )
+forceNetwork(
+  Nodes = nodes, Links = links[links$year==1957,], linkColour = "steelblue",
+  Source = "from", Target = "to",   # so the network is directed.
+  NodeID = "name", Group = "name", Nodesize = "Popularity", 
+  opacity = 1, fontSize = 16, charge = -250, zoom = TRUE
+)
+
+# Other network representations
+ggraph(network, layout = 'linear') + 
+  geom_edge_arc(aes(colour = factor(year)))
+
+network <- graph_from_data_frame(flare$edges, vertices = flare$vertices)
+ggraph(network, 'circlepack') + 
+  geom_node_circle(aes(fill = depth), size = 0.25, n = 50) + 
+  coord_fixed()
+
+ggraph(network, 'circlepack') + 
+  geom_edge_link() + 
+  geom_node_point(aes(colour = depth), size = 2) +
+  coord_fixed()
+
+# Flowchart interactive
+URL <- "https://cdn.rawgit.com/christophergandrud/networkD3/master/JSONdata/energy.json"
+Energy <- jsonlite::fromJSON(URL)
+# Now we have 2 data frames: a 'links' data frame with 3 columns (from, to, value), and a 'nodes' data frame that gives the name of each node.
+head( Energy$links )
+head( Energy$nodes )
+# Thus we can plot it
+sankeyNetwork(Links = Energy$links, Nodes = Energy$nodes,
+              Source = "source", Target = "target", Value = "value",
+              NodeID = "name", units = " TWh", fontSize = 12, nodeWidth = 30)
+
+# Creating graph with new data from scratch:
+links <- data.frame(
+  source=c("A","A", "A", "A", "A","J", "B", "B", "C", "C", "D","I"),
+  target=c("B","B", "C", "D", "J","A", "E", "F", "G", "H", "I","I"),
+  importance=as.factor(sample(1:4, 12, replace=T))
+)
+nodes <- data.frame(
+  name=LETTERS[1:10],
+  carac=c( rep("young",3),rep("adult",2), rep("old",5))
+)
+
+# Turn it into igraph object
+network <- graph_from_data_frame(d=links, vertices=nodes, directed=F) 
+
+# Plot
+ggraph(network, layout = 'kk') + 
+  geom_edge_link(mapping = aes(linetype = importance)) +
+  geom_node_point(aes(color=carac),size = 10) +
+  geom_node_text(aes(label=name), color="white") +
+  theme_graph(foreground = 'steelblue', fg_text_colour = 'white')
+
+
+# Circus plot from network
+# Dummy data
+d1 <- data.frame(from="origin", to=paste("group", seq(1,10), sep=""))
+d2 <- data.frame(from=rep(d1$to, each=10), to=paste("subgroup", seq(1,100), sep="_"))
+hierarchy <- rbind(d1, d2)
+
+# create a vertices data.frame. One line per object of our hierarchy, giving features of nodes.
+vertices <- data.frame(name = unique(c(as.character(hierarchy$from), as.character(hierarchy$to))) )
+vertices$group  <-  hierarchy$from[ match( vertices$name, hierarchy$to ) ]
+vertices$value <- runif(111)
+vertices$angles <- append(rep(0, 11), 90 - 360 * (1:100-0.5) / 100)
+hjust <- ifelse( vertices$angles < -90, 1, 0)
+
+# Create a graph object with the igraph library
+mygraph <- graph_from_data_frame( hierarchy, vertices=vertices )
+
+# create a dataframe with connection between leaves (individuals)
+all_leaves <- paste("subgroup", seq(1,100), sep="_")
+connect <- rbind( 
+  data.frame( from=sample(all_leaves, 100, replace=T) , to=sample(all_leaves, 100, replace=T)), 
+  data.frame( from=sample(head(all_leaves), 30, replace=T) , to=sample( tail(all_leaves), 30, replace=T)), 
+  data.frame( from=sample(all_leaves[25:30], 30, replace=T) , to=sample( all_leaves[55:60], 30, replace=T)), 
+  data.frame( from=sample(all_leaves[75:80], 30, replace=T) , to=sample( all_leaves[55:60], 30, replace=T)) 
+)
+# The connection object must refer to the ids of the leaves:
+from <- match( connect$from, vertices$name )
+to <- match( connect$to, vertices$name )
+
+# plot 1
+ggraph(mygraph, layout = 'dendrogram', circular = TRUE) + 
+  geom_conn_bundle(data = get_con(from = from, to = to), alpha=0.2, colour="skyblue", tension = 0) + 
+  geom_node_point(aes(filter = leaf, x = x*1.05, y=y*1.05)) +
+  theme_void()
+
+# plot 2
+ggraph(mygraph, layout = 'dendrogram', circular = TRUE) + 
+  geom_conn_bundle(data = get_con(from = from, to = to), alpha=0.2, colour="skyblue", tension = 0.9) + 
+  geom_node_point(aes(filter = leaf, x = x*1.05, y=y*1.05)) +
+  geom_node_text(aes(label=name), angle=vertices$angles, hjust=c(rep(0.5,11), rep(-0.3, 100))) +
+  scale_x_continuous(expand = c(.2, .2)) +
+  scale_y_continuous(expand = c(.2, .2)) +
+  theme_void()
+
+# plot 3
+library(RColorBrewer)
+library(ggforce)
+ggraph(mygraph, layout = 'dendrogram', circular = TRUE) + 
+  
+  # Color for background
+  geom_arc_bar(inherit.aes = FALSE,
+               data = data.frame(group=c("A", "B", "C", "D", "E"),
+                                 value=c(10,20,40,10,20)),
+               aes(x0 = 0, y0 = 0, r0 = 0.2, r = 1, # adjust r here to increase / decrease pie size
+                   amount = value, fill=group),
+               sep = 0, stat = 'pie', alpha = 0.2, colour = "grey"
+               ) +
+  scale_fill_manual(values = c( "#A6CEE3", "#B2DF8A", "#FDBF6F", "#CAB2D6", "#1F78B4"), name="Taxonomy\ngroup") +
+  
+  # Add nodes and leafs labels
+  geom_node_text(aes(x = x*1.15, y=y*1.15, filter = leaf, label=name, angle = angles, hjust=0, colour=group), size=2, alpha=1) +
+  geom_node_point(aes(filter = leaf, x = x*1.07, y=y*1.07, colour=group, alpha=0.2, size=value)) +
+  scale_colour_manual(values= rep( brewer.pal(9,"Paired") , 30), guide = "none") +
+  scale_size_continuous(range = c(0.1,10), guide = "none") +
+  scale_alpha(guide = "none") +
+  
+  # Add connections between nodes
+  geom_conn_bundle(data = get_con(from = from, to = to), alpha=0.3, width=0.9, aes(color=group)) +
+  scale_edge_color_manual(values= rep( brewer.pal(9,"Paired") , 30), guide = "none") +
+
+  # Change themes
+  theme_void() +
+  theme(
+    legend.position="right",
+    plot.margin=unit(c(0,0,0,0),"cm"),
+  ) +
+  expand_limits(x = c(-1.3, 1.3), y = c(-1.3, 1.3))
+
+
+# Circus plots
+library(chorddiag) #devtools::install_github("mattflor/chorddiag")
+m <- matrix(c(11975,  5871, 8916, 2868,
+              1951, 10048, 2060, 6171,
+              8010, 16145, 8090, 8045,
+              1013,   990,  940, 6907),
+            byrow = TRUE,
+            nrow = 4, ncol = 4)
+haircolors <- c("black", "blonde", "brown", "red")
+dimnames(m) <- list(have = haircolors,
+                    prefer = haircolors)
+groupColors <- c("#000000", "#FFDD89", "#957244", "#F26223")
+chorddiag(m, groupColors = groupColors, groupnamePadding = 50)
+
+
+
+
+## Wordcloud
+library(wordcloud2) 
+
+# Gives a proposed palette
+wordcloud2(demoFreq, size=1.6, color='random-dark')
+
+
+
+
+## Lolipop
+# Create data
+data <- data.frame(
+  x=LETTERS[1:26],
+  y=abs(rnorm(26))
+)
+
+# Plot
+ggplot(data, aes(x=x, y=y)) +
+  geom_segment( aes(x=x, xend=x, y=0, yend=y), color="grey") +
+  geom_point( color="orange", size=4) +
+  theme_light() +
+  theme(
+    panel.grid.major.x = element_blank(),
+    panel.border = element_blank(),
+    axis.ticks.x = element_blank()
+  ) +
+  xlab("") +
+  ylab("Value of Y") +
+  coord_flip()
+
+# Change baseline
+ggplot(data, aes(x=x, y=y)) +
+  geom_segment( aes(x=x, xend=x, y=1, yend=y), color="grey") +
+  geom_point( color="orange", size=4) +
+  theme_light() +
+  theme(
+    panel.grid.major.x = element_blank(),
+    panel.border = element_blank(),
+    axis.ticks.x = element_blank()
+  ) +
+  xlab("") +
+  ylab("Value of Y")
+
+# Dummy example with iris
+df <- cbind(iris[iris$Species=="setosa", c("Petal.Length", "Petal.Width")], id=1:50)
+ggplot(df) +
+  geom_point(aes(x=Petal.Length-Petal.Width, y=id), size = 3, color="darkred", alpha=.7) +
+  geom_point(aes(x=Petal.Length+Petal.Width, y=id), size = 3, color="seagreen", alpha=.7) +
+  geom_segment(aes(x=Petal.Length-Petal.Width, xend=Petal.Length+Petal.Width, y=id, yend=id)) +
+  theme_bw()
+
+
+
+
+## Circular bar plots
+
+# Create dataset
+data <- data.frame(
+  id=seq(1,60),
+  individual=paste( "Mister ", seq(1,60), sep=""),
+  value=sample( seq(10,100), 60, replace=T)
+)
+angles <- 90 - 360 * (data$id-0.5) / nrow(data)
+
+# Make the plot
+ggplot(data, aes(x=as.factor(id), y=value, labels = id)) +       # Note that id is a factor. If x is numeric, there is some space between the first bar
+  
+  # This add the bars with a blue color
+  geom_bar(stat="identity", fill=alpha("blue", 0.3)) +
+  geom_text(aes(label=paste("mister", id)), vjust=0.5, hjust=-0.3, angle = angles) +
+  
+  # Limits of the plot = very important. The negative value controls the size of the inner circle, the positive one is useful to add size over each bar
+  ylim(-100,120) +
+  
+  # Custom the theme: no axis title and no cartesian grid
+  theme_minimal() +
+  theme(
+    axis.text = element_blank(),
+    axis.title = element_blank(),
+    panel.grid = element_blank(),
+    plot.margin = unit(rep(-2,4), "cm")     # This remove unnecessary margin around plot
+  ) +
+  
+  # This makes the coordinate polar instead of cartesian.
+  coord_polar(start = 0)
+
+
+
+
+## Radar/Spider charts
+
+# Approach using coord_polar()
+# Get mean of measures by species
+df <- iris %>%
+  group_by(Species) %>%
+  summarise_at(vars(1:4), list(name = mean))
+meltdf <- melt(df, value.name = "mean")
+
+ggplot(meltdf, aes(x=variable, y=mean, color=Species, group=Species)) +
+  geom_point(size=2) +
+  geom_line() +
+  coord_polar() +
+  theme_minimal()
+
+# Using radarchart() from fmsb
+# Input data format is very specific. Each row must be an entity. Each column is a quantitative variable. First 2 rows provide the min and the max that will be used for each variable. 
+library(fmsb)
+
+fmsb_df <- rbind(max=8, 0, df)
+fmsb_df <- fmsb_df[,2:5]
+legend_names <- c("setosa", "versicolor", "virginica")
+colors_in <-     c(rgb(0.2,0.5,0.5,0.4), rgb(0.8,0.2,0.5,0.4) , rgb(0.7,0.5,0.1,0.4))
+colors_border <- c(rgb(0.2,0.5,0.5,0.9), rgb(0.8,0.2,0.5,0.9) , rgb(0.7,0.5,0.1,0.9))
+radarchart(fmsb_df,
+           #custom polygon
+           pcol=colors_border , pfcol=colors_in , plwd=4 , plty=1,
+           #custom the grid
+           cglcol="grey", cglty=1, axislabcol="grey", caxislabels=seq(0,20,5), cglwd=0.8,
+           #custom labels
+           vlcex=0.8 
+)
+legend(x=0.7, y=1, legend = legend_names, bty = "n", pch=20 , col=colors_border , text.col = "darkgrey", cex=1.2, pt.cex=3)
+
+
+
+
+## Tables into plots
+library(gt)
+library(dplyr)
+
+# Create a simple data frame
+data = data.frame(
+  Country = c("USA", "China", "India", "Brazil"),
+  Capitals = c("Washington D.C.", "Beijing", "New Delhi", "Brasília"),
+  Population = c(331, 1441, 1393, 212),
+  GDP = c(21.43, 14.34, 2.87, 1.49)
+)
+
+data %>%
+  gt() %>%
+  tab_header(title = md("What a **nice title**"),
+             subtitle = md("Pretty *cool subtitle* too, `isn't it?`")) %>%
+  tab_spanner(label = "Number",
+              columns = c(GDP, Population)) %>%
+  tab_spanner(label = "Label",
+              columns = c(Country, Capitals))
+
+
