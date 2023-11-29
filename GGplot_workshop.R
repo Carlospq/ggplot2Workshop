@@ -98,11 +98,26 @@ ggplot(data = iris,
 #
 # To add new layers to the main function we only need to 'add' (+) the code for the new layer.
 #
-# The aesthetic mapping is not enough by itself—we, it also need a layer to display our data.
+# The aesthetic mapping is not enough by itself—we also need a layer to display our data.
 # In ggplot2, we accomplish this by adding (stacking) layers to the output of ggplot().
 # There are several ways to construct layers in ggplot, but the simplest and most common approach is to use the functions named geom_*() (such as geom_point()).
-# The names of these geom_*() functions are actually misnomers, given that the they in fact set up entire layers and not just the geoms.
-# To provide a layer with the point geom to the plot, you simply need to call the following lines.
+
+# Aesthetics
+# Aesthetics mapped in ggplot() will be shared between all layers
+# Each aesthetic can have its own mapping
+# You can look at the documentation of the geom_*() function using the help function in R
+?geom_point()
+# Under Aesthetics we can see that this layer understands the following aesthetics:
+#
+#   x
+#   y
+#   alpha
+#   colour
+#   fill
+#   group   
+#   shape
+#   size
+#   stroke
 
 # Exercises:
 # 1) Generate a dotplot for Petal.Length ~ Petal.Width
@@ -140,7 +155,7 @@ ggplot(iris, aes(Petal.Length, Petal.Width)) +
   geom_point() +
   geom_line()
 
-# layers with diferent data and aesthetics
+# layers with different data and aesthetics
 ggplot(iris, aes(Petal.Length, Petal.Width)) +
   geom_point() +
   geom_line() +
