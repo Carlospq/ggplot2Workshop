@@ -208,6 +208,13 @@ ggplot(iris, aes(Petal.Length, Petal.Width, group=Species)) +
   geom_point(aes(size=Petal.Length), alpha=0.4, stroke=3) +
   geom_line(aes(color=Species), linewidth=1)
 
+# Using expressions for mapping
+d <- read.csv("https://raw.githubusercontent.com/vsbuffalo/bds-files/master/chapter-08-r/Dataset_S1.txt")
+d$diversity <- d$Pi/(10 * 1000)
+d$position <- (d$end + d$start)/2
+ggplot(d, aes(x = position, y = diversity)) +
+  geom_point(aes(color = diversity > 0.0075)) +
+  scale_color_manual(values=c('black', 'red')) + theme_bw()
 
 ##########################################################################################
 ### geoms() ###
@@ -340,6 +347,14 @@ ggplot(mpg, aes(x=class)) +
   geom_bar( aes( y = after_stat(100*count/sum(count)) ))
 
 
+# More examples
+# Add significance level
+library("ggpubr")
+ggplot(iris, aes(x=Species, y=Petal.Length, color=Species, fill=Species)) +
+  geom_boxplot(alpha=.3) +
+  stat_compare_means(label.y = 10) +
+  stat_compare_means(comparisons = list(c(1,2), c(1,3), c(2,3)),
+                     label = "p.signif") 
 
 # More examples with stat_'geom' and stat_summary || Check full examples here:https://ggplot2tutor.com/tutorials/summary_statistics
 ggplot(mpg) +
@@ -666,6 +681,30 @@ ggplot(data, aes(x="", y=value, fill=group)) +
   theme_minimal()
 
 
+# BE CAREFUL WITH TRANSFORMATIONS!!
+mov <- movies[sample(nrow(movies), 1000), ]
+mov
+m2 <- ggplot(mov, aes(x = factor(round(rating)), y = votes)) +
+          geom_point() +
+          stat_summary(fun.data = "mean_cl_boot",
+                       geom = "crossbar",
+                       colour = "red", width = 0.3) +
+          xlab("rating")
+# Transforming the scale means the data are transformed
+# first, after which statistics are computed:
+p1 <- m2 + scale_y_log10(breaks=c(10000, 20000, 30000, 40000, 50000, 60000))
+p1
+# Transforming the coordinate system occurs after the
+# statistic has been computed. This means we're calculating the summary on the raw data
+# and stretching the geoms onto the log scale.
+# Compare the widths of the standard errors.
+p2 <- m2 + coord_trans(y="log10")
+p2
+
+grid.arrange(p1, p2, ncol=2)
+
+
+
 # More examples
 # Coordinates allows us to transform mappings. For example, a polar coordinate system interprets x and y as angles and radius
 ggplot(mpg) +
@@ -679,6 +718,12 @@ ggplot(mpg) +
   expand_limits(y = 70)
 
 # Zoomed in section over main plot
+# Usin ggforce
+ggplot(iris, aes(Petal.Length, Petal.Width, colour = Species)) +
+  geom_point() +
+  facet_zoom(x = Species == "versicolor")
+
+# Combinning 2 plots
 # dummy data
 time <- seq(from = 0,
             to = 10,
@@ -961,6 +1006,10 @@ ggplot(data, aes(x=day)) +
         axis.title.y.right = element_text(color = "steelblue", size=13, hjust = 0)) +
   ggtitle("Temperature down, price up")
 
+
+
+
+
 # Time points
 df <- ToothGrowth
 df$dose <- as.factor(df$dose)
@@ -986,6 +1035,38 @@ ggplot(df, aes(x=dose, y=len, color=supp, group = supp)) +
                alpha = .1, position=position_dodge(.1)
                ) +
   theme_bw()
+
+
+
+
+## Venn diagrams
+if (!require(devtools)) install.packages("devtools")
+devtools::install_github("gaospecial/ggVennDiagram")
+library("ggVennDiagram")
+
+# Dummy data
+set.seed(20190708)
+genes <- paste("gene",1:1000,sep="")
+x <- list(
+  A = sample(genes,300), 
+  B = sample(genes,525), 
+  C = sample(genes,440),
+  D = sample(genes,350)
+)
+# Default plot
+ggVennDiagram(x, label_alpha = 0, 
+              category.names = c("Stage 1","Stage 2","Stage 3", "Stage4")) +
+  #scale_fill_manual(values = c("#0073C2FF", "#EFC000FF", "#868686FF", "#CD534CFF")) +
+  scale_fill_gradient(low="yellow",high = "#CD534CFF") +
+  scale_color_manual(values = rep("black", 4))
+
+if (!require(devtools)) install.packages("devtools")
+devtools::install_github("yanlinlin82/ggvenn")
+library("ggvenn")
+names(x) <- c("Stage 1","Stage 2","Stage 3", "Stage4")
+ggvenn(x, columns = c("Stage 1", "Stage 2", "Stage 3"),
+       fill_color = c("#0073C2FF", "#EFC000FF", "#868686FF", "#CD534CFF"),
+       stroke_size = 0.5, set_name_size = 4)
 
 
 ## Volcano plot
@@ -1150,13 +1231,65 @@ grid.arrange(heatmap_plot, dendro_plot, layout_matrix = rbind(c(1,1,1,2),
 
 
 
+## 3D plots from a 2d ggplot (https://www.tylermw.com/3d-ggplots-with-rayshader/)
+library(rayshader)
+a = data.frame(x=rnorm(20000, 10, 1.9), y=rnorm(20000, 10, 1.2) )
+b = data.frame(x=rnorm(20000, 14.5, 1.9), y=rnorm(20000, 14.5, 1.9) )
+c = data.frame(x=rnorm(20000, 9.5, 1.9), y=rnorm(20000, 15.5, 1.9) )
+data = rbind(a,b,c)
+
+pp <-  ggplot(data, aes(x=x, y=y)) +
+  geom_hex(bins = 20, size = 0.5, color = "black") +
+  scale_fill_viridis_c(option = "C")
+plot_gg(pp, width = 4, height = 4, scale = 300, multicore = TRUE)
+
+ggvolcano = volcano %>% 
+  reshape2::melt() %>%
+  ggplot() +
+  geom_tile(aes(x=Var1,y=Var2,fill=value)) +
+  geom_contour(aes(x=Var1,y=Var2,z=value),color="black") +
+  scale_x_continuous("X",expand = c(0,0), limits = c(30, 90)) +
+  scale_y_continuous("Y",expand = c(0,0)) +
+  scale_fill_gradientn("Z",colours = terrain.colors(10)) +
+  coord_fixed()
+ggvolcano
+plot_gg(ggvolcano, multicore = TRUE, raytrace = TRUE, width = 7, height = 4, 
+        scale = 300, windowsize = c(1400, 866), zoom = 0.6, phi = 30, theta = 30)
+
+
+
+
+## Terniary plots
+library(ggtern)
+# data preparation
+g36 <- read.csv("https://userpage.fu-berlin.de/soga/data/raw-data/G36chemical.txt",
+                sep = "\t",
+                row.names = "Sample"
+)
+colnames(g36) <- gsub(".mg.g", "", colnames(g36))
+data <- as.data.frame(g36[c("Mg", "Ca", "Fe")])
+# plotting
+ggtern(data = data, aes(Mg, Ca, Fe)) +
+  geom_point(
+    alpha = 0.5,
+    size = 2,
+    color = "black"
+  ) +
+  theme_rgbw() + geom_confidence_tern(breaks = 0.95)
+
+
+
+
+
 ## Phylogenetic Trees
 # Full documentation here: https://yulab-smu.top/treedata-book/index.html
 library("treeio")
 library("ggtree")
+library(ape)
+library(tidytree)
 
-nwk <- system.file("extdata", "sample.nwk", package="treeio")
-tree <- read.tree(nwk)
+#nwk <- system.file("extdata", "sample.nwk", package="treeio")
+tree <- read.tree("https://4va.github.io/biodatasci/data/tree_newick.nwk")
 
 ggplot(tree, aes(x, y)) + 
   geom_tree() +
@@ -1167,10 +1300,21 @@ ggplot(tree, aes(x, y)) +
 ggtree(tree, color="firebrick", size=1, linetype="dotted") +
   geom_point(aes(shape=isTip, color=isTip), size=3) 
 
+# If error appears when plotting try to install this older version of tidytree
+# remotes::install_version("tidytree", version = "0.4.2")
+ggtree(tree) +
+  geom_text(aes(label=node), hjust=1.2, vjust=1.2) +
+  geom_tiplab() + 
+  geom_cladelabel(node=23, label="Some clade", 
+                  color="red2", offset=.8, align=TRUE,
+                  linewidth=3,
+                  angle=90, hjust=.5, vjust=1)
+
 ggtree(tree, color="firebrick", size=1, linetype="dotted", layout="circular") +
   geom_nodepoint(color="#b5e521", alpha=1/4, size=10) +
   geom_tippoint(color="#FDAC4F", shape=8, size=3) +
-  geom_tiplab(color='firebrick', hjust = -0.5)
+  geom_tiplab(color='firebrick', hjust = -0.5) +
+  geom_hilight(node=c(9,10), fill=c("gold", "orange"))
 
 
 
