@@ -1288,33 +1288,60 @@ library("ggtree")
 library(ape)
 library(tidytree)
 
-#nwk <- system.file("extdata", "sample.nwk", package="treeio")
-tree <- read.tree("https://4va.github.io/biodatasci/data/tree_newick.nwk")
-
-ggplot(tree, aes(x, y)) + 
-  geom_tree() +
-  theme_tree()
-
-
-# Or
-ggtree(tree, color="firebrick", size=1, linetype="dotted") +
-  geom_point(aes(shape=isTip, color=isTip), size=3) 
-
 # If error appears when plotting try to install this older version of tidytree
 # remotes::install_version("tidytree", version = "0.4.2")
+
+#nwk <- system.file("extdata", "sample.nwk", package="treeio")
+tree <- read.tree("https://4va.github.io/biodatasci/data/tree_newick.nwk")
 ggtree(tree) +
   geom_text(aes(label=node), hjust=1.2, vjust=1.2) +
   geom_tiplab() + 
   geom_cladelabel(node=23, label="Some clade", 
                   color="red2", offset=.8, align=TRUE,
-                  linewidth=3,
+                  barsize=3,
                   angle=90, hjust=.5, vjust=1)
 
+# Or
+ggtree(tree, color="firebrick", size=1, linetype="dotted") +
+  geom_point(aes(shape=isTip, color=isTip), size=3) 
+
+# More examples
 ggtree(tree, color="firebrick", size=1, linetype="dotted", layout="circular") +
   geom_nodepoint(color="#b5e521", alpha=1/4, size=10) +
   geom_tippoint(color="#FDAC4F", shape=8, size=3) +
   geom_tiplab(color='firebrick', hjust = -0.5) +
-  geom_hilight(node=c(9,10), fill=c("gold", "orange"))
+  geom_hilight(node=c(9,10), fill=c("gold", "orange")) +
+  geom_text(aes(label=node), hjust=1.2, vjust=1.2)
+
+# Highlighting clades
+library(scales)
+clade_nodes <- c(13, 17, 21, 23)
+clade_names <- c("Clade 1", "Clade 2", "Clade 3", "Clade 4",)
+clade_color <- c(viridis_pal()(length(clade_nodes)))
+
+# "Split" tree by groups to color branches accordingly and 
+tree2 <- groupClade(tree, clade_nodes)
+
+# Plotting
+p <- ggtree(tree2, aes(color=group), size=1, linetype="dotted", layout="circular") +
+  # Asign viridis colors to groups
+  scale_color_manual(values = clade_color, label=clade_names) +
+  # Add nodepoints and node names
+  geom_nodepoint(color="#b5e521", size=10) +
+  geom_text(aes(label=node), color="black", show.legend = F) +
+  # Add tip points and tip names
+  geom_tippoint(color="#FDAC4F", shape=8, size=3, ) +
+  geom_tiplab(color='firebrick', hjust = -0.5, offset = 1) +
+  # Highlight specific clade
+  geom_highlight(mapping = aes(subset = node==17), 
+                 fill=clade_color[2], alpha = .2)
+
+for (i in 1:length(clade_nodes)){
+  p <- p + geom_cladelabel(node=clade_nodes[i], label=clade_names[i],
+                           color=clade_color[i], offset=7, align=TRUE,
+                           barsize=5, offset.text = 9, extend = F, )
+}
+p  
 
 
 
