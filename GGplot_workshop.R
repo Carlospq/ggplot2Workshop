@@ -19,7 +19,7 @@ invisible(lapply(packages, library, character.only = TRUE))
 
 
 # Optional (for some examples):
-optional_packages <- c('maps', 'ggrepel', 'ggraph', 'igraph', 'tidygraph', 'GGally', 'treeio', 'ggtree', 'chorddiag', 'wordcloud2', 'gt', 'RColorBrewer')
+optional_packages <- c('maps', 'ggrepel', 'ggraph', 'igraph', 'tidygraph', 'GGally', 'ggtree', 'chorddiag', 'wordcloud2', 'gt', 'RColorBrewer')
 
 # Install packages not yet installed
 installed_packages <- optional_packages %in% rownames(installed.packages())
@@ -29,6 +29,10 @@ if (any(installed_packages == FALSE)) {
 
 # Packages loading
 invisible(lapply(optional_packages, library, character.only = TRUE))
+
+## treeio is available in Bioconductor
+install.packages("BiocManager")
+BiocManager::install("treeio")
 
 
 ##########################################################################################
