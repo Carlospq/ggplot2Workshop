@@ -1,5 +1,5 @@
 #Part of this workshop has been adapted from (Thomas Lin Pedersen) GitHub repository: https://github.com/thomasp85/ggplot2_workshop
-#Link to youtube video: https://www.youtube.com/watch?v=h29g21z0a68
+#Link to YouTube video: https://www.youtube.com/watch?v=h29g21z0a68
 #Plenty of examples here: http://www.sthda.com/english/wiki/be-awesome-in-ggplot2-a-practical-guide-to-be-highly-effective-r-software-and-data-visualization
 
 #It's dangerous to go alone! Take this (cheat sheet): https://rstudio.github.io/cheatsheets/data-visualization.pdf
@@ -70,7 +70,7 @@ head(
 
 
 ##########################################################################################
-### basic plot with ggplot and mapping ###
+### Basic plot with ggplot and mapping ###
 
 # The main function of ggplot is the ggplot() function. It has two main arguments that you need to be aware of:
 
@@ -131,23 +131,25 @@ ggplot(iris, aes(x=Petal.Length, y=Petal.Width)) +
 ggplot(iris, aes(x=Petal.Length, y=Petal.Width)) +
   geom_point() +
   geom_smooth(formula = y ~ x, method='lm')
-# 3) Map the speceies information to the color of the dots. Try first mapping it on geom_point and then mapping it on the main function ggplot()
+# 3) Map the speceies information to the color of the dots. Try first to do the mapping on the geom_point function and then mapping it on the main function ggplot()
 ggplot(iris, aes(x=Petal.Length, y=Petal.Width)) +
   geom_point(aes(color=Species)) +
   geom_smooth(formula = y ~ x, method='lm')
+library(ggpubr)
 ggplot(iris, aes(x=Petal.Length, y=Petal.Width, color=Species)) +
   geom_point() +
-  geom_smooth(formula = y ~ x, method='lm')
+  geom_smooth(formula = y ~ x, method='lm') +
+  stat_cor()
 # 4) Change size and shape of dots
 ggplot(iris, aes(x=Petal.Length, y=Petal.Width, color=Species)) +
   geom_point(size=4, shape=3) +
   geom_smooth(formula = y ~ x, method='lm')
 # 5) Add a rectangle ( geom_rect() ) and fill it in green (?geom_rect)
 ggplot(iris, aes(x=Petal.Length, y=Petal.Width, color=Species)) +
-  #geom_rect(aes(xmin=0.9, xmax=2, ymin=0, ymax=0.75), alpha=.002, color=NA, fill="yellow") +      # ALERT! x and y from ggplot() function are still being mapped here. Meaning you are drowing 1 rectangle for each x+y from main function (alpha not working as expected due to overlapping rectangles)
   geom_point(size=4, shape=3) +
   geom_smooth(formula = y ~ x, method='lm') +
-  annotate(geom="rect", xmin=0.9, xmax=2, ymin=0, ymax=0.75, alpha=.15, color=NA, fill="yellow")
+  geom_rect(aes(xmin=0.9, xmax=2, ymin=0, ymax=0.75), alpha=.002, color=NA, fill="green")       # ALERT! x and y from ggplot() function are still being mapped here. Meaning you are drowing 1 rectangle for each x+y from main function (alpha not working as expected due to overlapping rectangles)
+  #annotate(geom="rect", xmin=0.9, xmax=2, ymin=0, ymax=0.75, alpha=.15, color=NA, fill="yellow")
   
 
 # single layer
@@ -170,9 +172,6 @@ ggplot(iris, aes(Petal.Length, Petal.Width)) +
   geom_point() +
   geom_line() +
   geom_rect(mapping = aes(xmin=2, xmax=3, ymin=0, ymax=4), color="red", fill="green")
-
-ggplot(iris, aes(Petal.Length, Petal.Width, color=Species)) +
-  geom_point()
 
 # overwriting aesthetics
 ggplot(iris, aes(Petal.Length, Petal.Width, color=Species)) +
@@ -265,7 +264,8 @@ ggplot(iris, aes(Species, Petal.Length, color=Species, fill=Species)) +
   geom_boxplot(alpha=.2)
 
 ggplot(iris, aes(Species, Petal.Length, color=Species, fill=Species)) +
-  geom_violin(alpha=.2)
+  geom_violin(alpha=.2) +
+  geom_jitter(width = .15)
 
 # multiple boxplot for each category || long formated data needed here
 meltedIris <- melt(iris, id.vars=c("Species"))
@@ -358,7 +358,7 @@ ggplot(iris, aes(x=Species, y=Petal.Length, color=Species, fill=Species)) +
   geom_boxplot(alpha=.3) +
   stat_compare_means(label.y = 10) +
   stat_compare_means(comparisons = list(c(1,2), c(1,3), c(2,3)),
-                     label = "p.signif") 
+                     label = "p.signif") + theme_bw()
 
 # More examples with stat_'geom' and stat_summary || Check full examples here:https://ggplot2tutor.com/tutorials/summary_statistics
 ggplot(mpg) +
@@ -412,84 +412,17 @@ ggplot(gapminder, aes(x = continent, y = lifeExp, fill = as.factor(year), group 
   scale_fill_viridis_d(name='year') + theme_minimal() +
   coord_cartesian(ylim = c(35, 90))
 
-##########################################################################################
-### annotation ###
-# This function adds geoms to a plot, but unlike a typical geom function, the properties of annotations are not mapped from variables of a data frame,
-# but are instead passed in as vectors. This is useful for adding small annotations (such as text labels)
-
-
-# Using the dot plot from the first examples...
-p <- ggplot(iris, aes(Petal.Length, Petal.Width, color=Species)) +
-  geom_point(size=3) +
-  stat_smooth(method = "lm", 
-              formula = y ~ x, 
-              geom = "smooth", 
-              alpha=.2)
-p
-
-# Exercieses:
-# 1) Annotate the names of the species inside the plot
-p + annotate(geom = "text", x=1.5, y=0.75, label = "Setosa", col="red") +
-  annotate(geom = "text", x=4,   y=0.75, label = "Versicolor", col="darkgreen") +
-  annotate(geom = "text", x=6,   y=1.25, label = "Virginica", col="blue")
-  
-
-# 2) Highlight dots of setosa by annotating a rectangle that cover all dots
-p + annotate("rect", xmin = 0.75, xmax = 2, ymin = 0, ymax = 0.75, alpha = .1, fill="yellow")
-  
-
-
-# More examples
-p <- ggplot(iris, aes(Petal.Length, Petal.Width, color=Species)) +
-            geom_point(size=3) +
-            stat_smooth(method = "lm", 
-                        formula = y ~ x, 
-                        geom = "smooth", 
-                        alpha=.2)
-p
-
-p + annotate(geom = "text", x=1.5, y=0.75, label = "Setosa", col="red") +
-    annotate(geom = "text", x=4,   y=0.75, label = "Versicolor", col="darkgreen") +
-    annotate(geom = "text", x=6,   y=1.25, label = "Setosa", col="blue")
-
-p + annotate("rect", xmin = 0.75, xmax = 2, ymin = 0, ymax = 0.75, alpha = .2) +
-    annotate("segment", x = 2, xend = 3, y = 2, yend = 0, colour = "steelblue")
-  
-
-# Assisted annotation ggforce / ggrepel
-library(ggforce)
-library(ggrepel)
-ggplot(iris, aes(x=Petal.Length, y=Petal.Width, color=Species)) +
-  geom_point() +
-  geom_smooth(formula = y ~ x, method='lm') + 
-  geom_mark_ellipse(aes(filter = Species=='setosa',
-                        label = 'Setosa',
-                        description = 'Observations from the Setosa species'))
-
-ggplot(mtcars, aes(x = disp, y = mpg)) +
-  geom_point() +
-  geom_text_repel(
-    aes(label = row.names(mtcars))
-  )
-
-# using vectors to add annotations
-maxSetosaPL <- max(iris[iris$Species=="setosa", "Petal.Length"])
-maxSetosaPW <- max(iris[iris$Species=="setosa" & iris$Petal.Length==maxSetosaPL, "Petal.Width"])
-maxVersicolorPL <- max(iris[iris$Species=="versicolor", "Petal.Length"])
-maxVersicolorPW <- max(iris[iris$Species=="versicolor" & iris$Petal.Length==maxVersicolorPL, "Petal.Width"])
-maxVirginicaPL <- max(iris[iris$Species=="virginica", "Petal.Length"])
-maxVirginicaPW <- max(iris[iris$Species=="virginica" & iris$Petal.Length==maxVirginicaPL, "Petal.Width"])
-
-maxX <- c(maxSetosaPL, maxVersicolorPL, maxVirginicaPL)
-maxY <- c(maxSetosaPW, maxVersicolorPW, maxVirginicaPW)
-
-p + annotate(geom="text", x=maxX, y=maxY+0.05, label=maxX, col=c("magenta", "yellowgreen", "purple"))
 
 ##########################################################################################
-### Multi plots ###
+### Multiplots ###
+
+# facet_grid() allows us to split data in different panels according to specific variables
+# To do so it is recommended to use the long format
+# This function will split (map) the data into 'rows ~ columns'
+# If we only want to split data into rows then we add a "." for columns, like this: 'rows ~ .'
 
 # Exercises:
-# 1) Plot distribution for each measure (Sepal.Length, Sepal.Width, ...) in different rows, map Species to colors
+# 1) Plot the distribution of each measure (Sepal.Length, Sepal.Width, ...) in different rows, map Species to colors
 miris <- melt(iris, id.vars=c("Species"))
 ggplot(miris, aes(x=value, color=Species)) +
   geom_density() +
@@ -510,12 +443,12 @@ ggplot(miris, aes(x=value, color=Species)) +
 # *A graphical object (“grob”) is a description of a graphical item. These basic classes provide default behaviour for validating, drawing, and modifying graphical objects.
 
 # Exercises:
-# 1) Save 2 plots into 2 different grob objects
+# 1) Save 2 ggplots into 2 different grob objects
 p1 <- ggplot(miris, aes(x=value, color=Species)) +
-  geom_density()
+        geom_density()
 p2 <- ggplot(miris, aes(x=value, color=Species)) +
-  geom_density() +
-  facet_grid(variable ~ Species, scales="free_y")
+        geom_density() +
+        facet_grid(variable ~ Species, scales="free_y")
 # 2) Use grid.arrange() to plot the previous 2 objects together, either in 2 columns or in two rows
 grid.arrange(p1, p2)
 # 3) Draw the 2 plots with the same size and without legend ( ... + theme(legend.position = "none") ) and make them share the same legend (Hint: use the following code to extract the legend as a grob)
@@ -537,41 +470,24 @@ get_only_legend <- function(plot) {
   return(legend) 
 } 
 
+# Using patchwork
+# We can obtain same results with this library. We can specify which plots we want to add otgether directly in the command line like this:
+library(patchwork)
+p1 + p2
+p1 / p2
+(p1+theme(legend.position = "none") | p1) / p2
+
+design <- "1112
+           3332"
+design <- "AAAB
+           CCCB"
+p1 + p2 + plot_layout(design = design)
+p1 / p2 + plot_layout(guides = 'collect')
 
 # More examples
 # Multiple variables in rows
 mg <- ggplot(mtcars, aes(x = mpg, y = wt)) + geom_point()
 mg + facet_grid(vs + am ~ gear, margins = TRUE)
-
-
-pairs(iris)
-library(GGally) 
-ggpairs(iris, mapping = aes(color=Species, alpha=.5))
-ggpairs(iris, upper = list(continuous = wrap("density", alpha = 0.5)))
-?ggpairs
-
-# Split by 1 category
-ggplot(iris, aes(Petal.Length, color=Species, fill=Species)) +
-  geom_density(alpha=0, size=2) +
-  geom_bar(alpha=.2) +
-  facet_wrap(Species ~ .)
-
-p1 <- ggplot(iris, aes(Petal.Length, Petal.Width, color=Species)) +
-          geom_point(size=3) +
-          facet_wrap(. ~ Species)
-p1
-
-# Split by 2 categories
-meltedIris <- melt(iris, id.vars=c("Species"))
-head(meltedIris)
-p2 <- ggplot(meltedIris, aes(value, color=Species, fill=Species)) +
-          geom_density(alpha=.2) +
-          facet_grid(Species ~ variable)
-p2
-
-ggplot(meltedIris, aes(value, color=Species, fill=Species)) +
-  geom_density(alpha=.2) +
-  facet_grid(variable ~ Species, scales = "free_y")
 
 # diferent plots in 1 canvas: grid.arrange
 library(grid)
@@ -587,19 +503,6 @@ lay <- rbind(c(1,1,1,2,3),
              c(6,7,8,9,9))
 grid.arrange(grobs = gs, layout_matrix = lay)
 
-p1 <- ggplot(iris, aes(Petal.Length, color=Species, fill=Species)) +
-  geom_density(alpha=0, size=2) +
-  geom_bar(alpha=.2) +
-  facet_wrap(Species ~ .)
-p2 <- ggplot(meltedIris, aes(value, color=Species, fill=Species)) +
-  geom_density(alpha=.2) +
-  facet_grid(Species ~ variable)
-grid.arrange(p1, p2, nrow = 1)
-
-grid.arrange(grobs = list(p1, p1, p2),
-             widths = c(2, 1, 1),
-             layout_matrix = rbind(c(1, 2, NA),
-                                   c(3, 3, 3)))
 
 p1 <- ggplot(iris, aes(Petal.Length, color=Species, fill=Species)) +
   geom_density(alpha = 0.3) +
@@ -638,6 +541,7 @@ grid.arrange(grobs = list(p1, p2, p3, legend),
              layout_matrix = rbind(c(1, 1, 4), 
                                    c(3, 3, 2)))
 
+
 ##########################################################################################
 ###  Scales & Coordinates ###
 
@@ -646,12 +550,15 @@ grid.arrange(grobs = list(p1, p2, p3, legend),
 #   - a cartesian coordinates system allows us to zoom in and out of a plot
 #   - a polar coordinate system interprets x and y as angles and radius
 
+# example:
+p3 + scale_y_reverse()
+
 # The commands for scales follow the pattern scale_'aesthetic'_'mehtod'()
 
 # Exercises:
 # 1.1) Using Sepal.Length draw a bar plot and fill the bars by species
 ggplot(iris, aes(x=Sepal.Length, fill=Species)) +
-  geom_bar(alpha=.7)
+  geom_bar(alpha=.7, position="dodge")
 # 1.2) Scale x axis into bins
 ggplot(iris, aes(x=Sepal.Length, fill=Species)) +
   geom_bar(position="dodge", alpha=.7) +
@@ -667,16 +574,18 @@ ggplot(iris, aes(x=Sepal.Length, fill=Species)) +
   scale_x_binned() +
   coord_cartesian(ylim = c(0,10))
 
-# 2.1) Using the following exponential data transform the axis to obtain a straight line (diagonal)
+# 2.1) Using the following exponential data transform the axis so dots follow a straight line (diagonal)
 data <- data.frame(x=1:100, y=10**c(1:100))
-ggplot(data, aes(x=x, y=y)) + geom_point() + scale_y_log10(breaks = c(0, 1e20, 1e50, 1e90, 1e100))
+ggplot(data, aes(x=x, y=y)) + 
+  geom_point() + 
+  scale_y_log10(breaks = c(0, 1e10, 1e50, 1e90, 1e100))
 
-# 3.1) Use the following data to create a bar chart with only one stacked bar, and fill by group (hint: You can always map "" to a aesthetic)
+# 3.1) Use the following data to create a bar chart with only one stacked bar (stat="identity", or use geom_col()), and fill by group (hint: You can always map "" to a aesthetic)
 data <- data.frame(
   group=LETTERS[1:5],
   value=c(13,7,9,21,2)
 )
-ggplot(data, aes(x="", y=value, fill=group)) +
+ggplot(data, aes(x="", y=value, fill=group)) + 
   geom_bar(stat="identity")
 # 3.2) Transform the y axis into angles using coord_polar(...)
 ggplot(data, aes(x="", y=value, fill=group)) +
@@ -686,26 +595,27 @@ ggplot(data, aes(x="", y=value, fill=group)) +
 
 
 # BE CAREFUL WITH TRANSFORMATIONS!!
+movies <- ggplot2movies::movies
 mov <- movies[sample(nrow(movies), 1000), ]
 mov
-m2 <- ggplot(mov, aes(x = factor(round(rating)), y = votes)) +
-          geom_point() +
-          stat_summary(fun.data = "mean_cl_boot",
-                       geom = "crossbar",
-                       colour = "red", width = 0.3) +
-          xlab("rating")
-# Transforming the scale means the data are transformed
-# first, after which statistics are computed:
-p1 <- m2 + scale_y_log10(breaks=c(10000, 20000, 30000, 40000, 50000, 60000))
+m1 <- ggplot(mov, aes(x = factor(round(rating)), y = votes)) +
+  geom_point() +
+  stat_summary(fun.data = "mean_cl_boot",
+               geom = "crossbar",
+               colour = "red", width = 0.3) +
+  xlab("rating")
+# Transforming the scale means the data are transformed first,
+# after which statistics are computed:
+p1 <- m1 + scale_y_log10(breaks=c(10000, 20000, 30000, 40000, 50000, 100000, 150000))
 p1
 # Transforming the coordinate system occurs after the
 # statistic has been computed. This means we're calculating the summary on the raw data
 # and stretching the geoms onto the log scale.
 # Compare the widths of the standard errors.
-p2 <- m2 + coord_trans(y="log10")
+p2 <- m1 + coord_trans(y="log10") + scale_y_continuous(breaks=c(10000, 20000, 30000, 40000, 50000, 100000, 150000))
 p2
 
-grid.arrange(p1, p2, ncol=2)
+grid.arrange(m1, p1, p2, ncol=3)
 
 
 
@@ -723,6 +633,7 @@ ggplot(mpg) +
 
 # Zoomed in section over main plot
 # Usin ggforce
+library(ggforce)
 ggplot(iris, aes(Petal.Length, Petal.Width, colour = Species)) +
   geom_point() +
   facet_zoom(x = Species == "versicolor")
@@ -738,15 +649,15 @@ df <- data.frame(time, line_1, line_2)
 
 # Main plot
 p1 <-  ggplot(data = df, aes(x = time)) +
-          geom_line(aes(y = line_2), color = "red") +
-          geom_line(aes(y = line_1), color = "blue") +
-          theme_bw()
+  geom_line(aes(y = line_2), color = "red") +
+  geom_line(aes(y = line_1), color = "blue") +
+  theme_bw()
 # Section with a zoom \ with new plot or with a zoom in of the original plot
 p2 <-  ggplot(data = df, aes(x = time)) +
-          geom_line(aes(y = line_1), color = "blue") +
-          xlim (1, 5) +
-          ylim (0, 1500) +
-          theme_bw()
+  geom_line(aes(y = line_1), color = "blue") +
+  xlim (1, 5) +
+  ylim (0, 1500) +
+  theme_bw()
 p2 <- p1 + coord_cartesian(ylim = c(0,1500), xlim=c(1,5))
 # Overlapping of plots
 p1 + 
@@ -876,36 +787,36 @@ p <- ggplot(iris, aes(Species, Petal.Length, color=Species, fill=Species)) +
   scale_fill_manual(values = c("chocolate2", "olivedrab3", "tomato3"), guide = "none")
 
 p + ggtitle("Distribution of petal length") +
-    xlab("Species name") +
-    ylab("Petal length (cm)")
-
+  xlab("Species name") +
+  ylab("Petal length (cm)")
+# Same than
 p + labs(title="Distribution of petal length",
          x="Species name", y="Petal length (cm)")
 
 p + labs(title="Distribution of petal length",
          x="Species name", y="Petal length (cm)",
          fill="Fill Species", color="Color Species") +
-    theme(plot.title = element_text(color="darkred", size=14, face="bold.italic", hjust = .5),
-          axis.title.x = element_text(size=14, face="bold", margin = margin(25,0,0,0, "pt")),
-          axis.title.y = element_text(size=14, face="bold", margin = margin(0,25,0,0, "pt")),
-          axis.text.x = element_text(size= 12, angle = 45, vjust = .5),
-          axis.text.y = element_text(size= 12),
-          axis.ticks = element_line(colour = "grey", linewidth = 2),
-          axis.line = element_line(colour = "grey"),
-          panel.background = element_rect(fill = "white"),
-          panel.grid.major.y = element_line(colour = "darkgrey", linewidth=1),
-          panel.grid.minor.y = element_line(colour = "grey", linewidth=.5),
-          plot.margin = unit(1:4, "cm"),
-          plot.background = element_rect(fill = "white"),
-          legend.background = element_rect(color="lightgrey"),
-          legend.text.align = 1,
-          legend.position = "right",
-          legend.title = element_text(size=18),
-          legend.text = element_text(size=14)
-          )
-    
+  theme(plot.title = element_text(color="darkred", size=14, face="bold.italic", hjust = .5),
+        axis.title.x = element_text(size=14, face="bold", margin = margin(25,0,0,0, "pt")),
+        axis.title.y = element_text(size=14, face="bold", margin = margin(0,25,0,0, "pt")),
+        axis.text.x = element_text(size= 12, angle = 45, vjust = .5),
+        axis.text.y = element_text(size= 12),
+        axis.ticks = element_line(colour = "grey", linewidth = 2),
+        axis.line = element_line(colour = "grey"),
+        panel.background = element_rect(fill = "white"),
+        panel.grid.major.y = element_line(colour = "darkgrey", linewidth=1),
+        panel.grid.minor.y = element_line(colour = "grey", linewidth=.5),
+        plot.margin = unit(1:4, "cm"),
+        plot.background = element_rect(fill = "white"),
+        legend.background = element_rect(color="lightgrey"),
+        legend.text.align = 1,
+        legend.position = "right",
+        legend.title = element_text(size=18),
+        legend.text = element_text(size=14)
+  )
+
 p + theme_bw() +
-    theme(axis.text = element_text(size=12))
+  theme(axis.text = element_text(size=12))
 
 p + theme_classic()
 p + theme_minimal()
@@ -934,6 +845,82 @@ pTheme <- theme(plot.title = element_text(color="darkred", size=14, face="bold.i
 p + pTheme
 p1 + pTheme
 p2 + pTheme
+
+
+##########################################################################################
+### annotation ###
+# This function adds geoms to a plot, but unlike a typical geom function, the properties of annotations are not mapped from variables of a data frame,
+# but are instead passed in as vectors. This is useful for adding small annotations (such as text labels)
+
+
+# Using the dot plot from the first examples...
+p <- ggplot(iris, aes(Petal.Length, Petal.Width, color=Species)) +
+  geom_point(size=3) +
+  stat_smooth(method = "lm", 
+              formula = y ~ x, 
+              geom = "smooth", 
+              alpha=.2)
+p
+
+# Exercieses:
+# 1) Annotate the names of the species inside the plot using annotate()
+p + annotate(geom = "text", x=1.5, y=0.75, label = "Setosa", col="red") +
+  annotate(geom = "text", x=4,   y=0.75, label = "Versicolor", col="darkgreen") +
+  annotate(geom = "text", x=6,   y=1.25, label = "Virginica", col="blue")
+
+
+# 2) Highlight dots of setosa by annotating a rectangle that cover all dots
+p + annotate("rect", xmin = 0.75, xmax = 2, ymin = 0, ymax = 0.75, alpha = .1, fill="yellow")
+
+
+
+# More examples
+p <- ggplot(iris, aes(Petal.Length, Petal.Width, color=Species)) +
+  geom_point(size=3) +
+  stat_smooth(method = "lm", 
+              formula = y ~ x, 
+              geom = "smooth", 
+              alpha=.2)
+p
+
+p + annotate("rect", xmin = 0.75, xmax = 2, ymin = 0, ymax = 0.75, alpha = .2) +
+  annotate("segment", x = 2, xend = 3, y = 2, yend = 0, colour = "steelblue")
+
+
+# Assisted annotation ggforce / ggrepel
+library(ggforce)
+library(ggrepel)
+ggplot(iris, aes(x=Petal.Length, y=Petal.Width, color=Species)) +
+  geom_point() +
+  geom_smooth(formula = y ~ x, method='lm') + 
+  geom_mark_ellipse(aes(filter = Species=='setosa',
+                        label = 'Setosa',
+                        description = 'Observations from the Setosa species'))
+
+ggplot(mtcars, aes(x = disp, y = mpg)) +
+  geom_point() +
+  geom_text(
+    aes(label = row.names(mtcars))
+  )
+# Now with ggrepel
+ggplot(mtcars, aes(x = disp, y = mpg)) +
+  geom_point() +
+  geom_text_repel(
+    aes(label = row.names(mtcars))
+  )
+
+# using vectors to add annotations
+maxSetosaPL <- max(iris[iris$Species=="setosa", "Petal.Length"])
+maxSetosaPW <- max(iris[iris$Species=="setosa" & iris$Petal.Length==maxSetosaPL, "Petal.Width"])
+maxVersicolorPL <- max(iris[iris$Species=="versicolor", "Petal.Length"])
+maxVersicolorPW <- max(iris[iris$Species=="versicolor" & iris$Petal.Length==maxVersicolorPL, "Petal.Width"])
+maxVirginicaPL <- max(iris[iris$Species=="virginica", "Petal.Length"])
+maxVirginicaPW <- max(iris[iris$Species=="virginica" & iris$Petal.Length==maxVirginicaPL, "Petal.Width"])
+
+maxX <- c(maxSetosaPL, maxVersicolorPL, maxVirginicaPL)
+maxY <- c(maxSetosaPW, maxVersicolorPW, maxVirginicaPW)
+
+p + annotate(geom="text", x=maxX, y=maxY+0.05, label=maxX, col=c("magenta", "yellowgreen", "purple"))
 
 
 ##########################################################################################
@@ -1207,7 +1194,7 @@ library(ggdendro)
 dendro_plot <- ggdendrogram(data = otter_dendro, rotate = TRUE) +
   scale_x_discrete(expand = c(0.01,0)) +
   theme(plot.margin = unit(c(1,0,1,0), "cm"))  
-#dendro_plot
+dendro_plot
 
 # Prepare data for heatmap
 otter_long <- pivot_longer(data = otter_scaled,
@@ -1227,7 +1214,7 @@ heatmap_plot <- ggplot(data = otter_long, aes(x = measurement, y = accession)) +
         axis.ticks.y = element_blank(),
         legend.position = "left",
         plot.margin = unit(c(1,0,1,0), "cm"))
-#heatmap_plot
+heatmap_plot
 
 grid.arrange(heatmap_plot, dendro_plot, layout_matrix = rbind(c(1,1,1,2),
                                                               c(1,1,1,2)))
@@ -1252,7 +1239,7 @@ ggvolcano = volcano %>%
   ggplot() +
   geom_tile(aes(x=Var1,y=Var2,fill=value)) +
   geom_contour(aes(x=Var1,y=Var2,z=value),color="black") +
-  scale_x_continuous("X",expand = c(0,0), limits = c(30, 90)) +
+  scale_x_continuous("X",expand = c(0,0)) +
   scale_y_continuous("Y",expand = c(0,0)) +
   scale_fill_gradientn("Z",colours = terrain.colors(10)) +
   coord_fixed()
@@ -1319,9 +1306,9 @@ ggtree(tree, color="firebrick", size=1, linetype="dotted", layout="circular") +
 
 # Highlighting clades
 library(scales)
-clade_nodes <- c(13, 17, 21, 23)
-clade_names <- c("Clade 1", "Clade 2", "Clade 3", "Clade 4",)
-clade_color <- c(viridis_pal()(length(clade_nodes)))
+clade_nodes <- c(17, 21, 23)
+clade_names <- c("Clade 1", "Clade 2", "Clade 3")
+clade_color <- c(viridis_pal()(length(clade_nodes)+1))
 
 # "Split" tree by groups to color branches accordingly and 
 tree2 <- groupClade(tree, clade_nodes)
