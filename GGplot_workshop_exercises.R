@@ -126,7 +126,7 @@ ggplot(data = iris,
 # Exercises:
 # 1) Generate a dotplot for Petal.Length ~ Petal.Width
 # 2) Add a regression line (geom_smooth() with `formula = y ~ x` and method='lm'
-# 3) Map the speceies information to the color of the dots. Try first to do the mapping on the geom_point function and then mapping it on the main function ggplot()
+# 3) Using the previous plot, map the speceies data to the color of the dots. Try first to do the mapping on the geom_point function and then mapping it on the main function ggplot()
 # 4) Change size and shape of dots
 # 5) Add a rectangle ( geom_rect() ) and fill it in green (?geom_rect)
 
