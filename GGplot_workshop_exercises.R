@@ -139,7 +139,7 @@ ggplot(data = iris,
 # 2) Generate a boxplot or violinplot for Petal.Length data with one box for each species
 # 3) Repeat the boxplot but now try to have all variables (Petal.Length, Petal.Width, Sepal.Length, Sepal.Width) in the same plot (*You need the long format to do this plot)
 # 4) Plot the distribution of Petal.Length by species (geom_density())
-# 5) Add the bar plot on top of the previous density plot
+# 5) Add the bar plot on top of the previous density plot. Use position="dodge" to plot the bars side by side
 
 
 ##########################################################################################

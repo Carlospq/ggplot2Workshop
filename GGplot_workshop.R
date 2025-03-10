@@ -1,3 +1,8 @@
+#Download workshop material from this website:
+  
+#  https://github.com/Carlospq/ggplot2Workshop
+
+
 #Part of this workshop has been adapted from (Thomas Lin Pedersen) GitHub repository: https://github.com/thomasp85/ggplot2_workshop
 #Link to YouTube video: https://www.youtube.com/watch?v=h29g21z0a68
 #Plenty of examples here: http://www.sthda.com/english/wiki/be-awesome-in-ggplot2-a-practical-guide-to-be-highly-effective-r-software-and-data-visualization
@@ -32,7 +37,7 @@ if (any(installed_packages == FALSE)) {
 # Packages loading
 invisible(lapply(optional_packages, library, character.only = TRUE))
 
-## treeio is available in Bioconductor
+## Optional package: treeio is available in Bioconductor
 install.packages("BiocManager")
 BiocManager::install("treeio")
 
@@ -146,13 +151,13 @@ ggplot(iris, aes(x=Petal.Length, y=Petal.Width, color=Species)) +
   stat_cor()
 # 4) Change size and shape of dots
 ggplot(iris, aes(x=Petal.Length, y=Petal.Width, color=Species)) +
-  geom_point(size=4, shape=3) +
+  geom_point(size=3, shape=3) +
   geom_smooth(formula = y ~ x, method='lm')
 # 5) Add a rectangle ( geom_rect() ) and fill it in green (?geom_rect)
 ggplot(iris, aes(x=Petal.Length, y=Petal.Width, color=Species)) +
   geom_point(size=4, shape=3) +
   geom_smooth(formula = y ~ x, method='lm') +
-  geom_rect(aes(xmin=0.9, xmax=2, ymin=0, ymax=0.75, fill="green"), alpha=.007, color=NA)       # ALERT! x and y from ggplot() function are still being mapped here. Meaning you are drowing 1 rectangle for each x+y from main function (alpha not working as expected due to overlapping rectangles)
+  geom_rect(aes(xmin=0.9, xmax=2, ymin=0, ymax=0.75), alpha=0.002, fill="green", color=NA) # ALERT! x and y from ggplot() function are still being mapped here. Meaning you are drowing 1 rectangle for each x+y from main function (alpha not working as expected due to overlapping rectangles)
   #annotate(geom="rect", xmin=0.9, xmax=2, ymin=0, ymax=0.75, alpha=.15, color=NA, fill="yellow")
 
   
@@ -213,21 +218,23 @@ ggplot(iris, aes(Petal.Length, Petal.Width, group=Species)) +
 
 # Exercises:
 # 1) Plot Species names instead of dots using geom_text. You will need to map Species names to `label`
-ggplot(iris, aes(x=Petal.Length, y=Petal.Width, label=Species)) +
-  geom_text()
+ggplot(iris, aes(x=Petal.Length, y=Petal.Width)) +
+  geom_text(data=iris[iris$Petal.Length>6,], mapping=aes(label=Species)) +
+  geom_point( )
 # 2) Generate a boxplot or violinplot for Petal.Length data with one box for each species
 ggplot(iris, aes(x=Species, y=Petal.Length)) +
-  geom_boxplot()
+  geom_violin(aes(color=Species, fill=Species), alpha=0.5)
 # 3) Repeat the boxplot but now try to have all variables (Petal.Length, Petal.Width, Sepal.Length, Sepal.Width) in the same plot (*You need the long format to do this plot)
 miris <- melt(iris)
 ggplot(miris, aes(x=variable, y=value, color=Species, fill=Species)) +
-  geom_boxplot(alpha=.2)
+  geom_boxplot(alpha=.2) +
+  geom_jitter(position=position_jitterdodge(), size=1)
 # 4) Plot the distribution of Petal.Length by species (geom_density())
 ggplot(iris, aes(x=Petal.Length, color=Species)) +
   geom_density()
-# 5) Add the bar plot on top of the previous density plot
+# 5) Add the bar plot on top of the previous density plot. Use position="dodge" to plot the bars side by side
 ggplot(iris, aes(x=Petal.Length, color=Species)) +
-  geom_bar(aes(fill=Species), position = "dodge", alpha=.1) +
+  geom_bar(aes(fill=Species), position="dodge", alpha=.1) +
   geom_density(linewidth=1)
 
 
@@ -288,6 +295,11 @@ ggplot(df.summary, aes(x=dose, y=mean, ymin=mean-sd, ymax=mean+sd, fill=supp)) +
   geom_bar(stat = "identity", position ="dodge") +
   geom_errorbar(position = position_dodge(.9), width=.5, linewidth=0.7)
 
+ggplot(df, aes(x=dose, y=len, fill=supp)) +
+  geom_bar(stat="summary", position="dodge") +
+  geom_errorbar(stat="summary", position=position_dodge(width=0.9), width=0.25)
+  # stat_summary(fun.data = "mean_se", geom="errorbar", width=0.25, position=position_dodge(width=0.9))
+
 
 # Density maps
 head(faithfuld) # Waiting time between eruptions and the duration of the eruption for the Old Faithful geyser in Yellowstone National Park, Wyoming, USA. 
@@ -337,7 +349,8 @@ ggplot(mpg, aes(x=class)) +
 # geom_bar uses the default values from stat_count to generate the plot
 # we can access the statistics calculated by stat_count using after_stat()
 ggplot(mpg, aes(x=class)) +
-  geom_bar( aes( y = after_stat(100*count/sum(count)) ))
+  geom_bar( aes( y = after_stat(100*count/sum(count)) )) +
+  labs(title = "some title",subtitle = "some subtatile", x="X axis" , y="Y axis")
 
 
 # More examples
@@ -413,7 +426,7 @@ ggplot(gapminder, aes(x = continent, y = lifeExp, fill = as.factor(year), group 
 miris <- melt(iris, id.vars=c("Species"))
 ggplot(miris, aes(x=value, color=Species)) +
   geom_density() +
-  facet_grid(variable ~ .)
+  facet_grid(variable  ~.)
 # 2) Now split the previous plot by placing each Species in different columns (keep variables in different row)
 ggplot(miris, aes(x=value, color=Species)) +
   geom_density() +
@@ -439,7 +452,7 @@ p2 <- ggplot(miris, aes(x=value, color=Species)) +
         facet_grid(variable ~ Species, scales="free_y") +
         labs(tag = "B")
 # 2) Use grid.arrange() to plot the previous 2 objects together, either in 2 columns or in two rows
-grid.arrange(p1, p2)
+grid.arrange(p1, p2, p1, p1, p1)
 # 3) Draw the 2 plots with the same size and without legend ( ... + theme(legend.position = "none") ) and make them share the same legend (Hint: use the following code to extract the legend as a grob)
 legend <- get_only_legend(p1)
 grid.arrange(p1 + theme(legend.position = "none"), legend, p2 + theme(legend.position = "none"), nrow=2, ncol=2)
@@ -473,7 +486,7 @@ design <- "1112
            3332"
 design <- "AAAB
            CCCB"
-p1 + p2 + plot_layout(design = design)
+p1 + legend + p2 + plot_layout(design = design)
 p1 / p2 + plot_layout(guides = 'collect')
 
 # More examples
@@ -730,7 +743,6 @@ ggplot(data, aes(x=X, y=Y, fill=Z)) +
 # 3) Use iris data to draw again a box plot and change color and fill manually
 ggplot(iris, aes(x="", y=Petal.Length, color=Species, fill=Species)) +
   geom_boxplot(aes(alpha=Species)) +
-  scale_fill_manual(values = c("darkred", "seagreen", "steelblue")) +
   scale_color_manual(values = c("darkred", "seagreen", "steelblue")) +
   scale_alpha_manual(values = c(0.1, 0.6, 1))
 
@@ -768,7 +780,8 @@ ggplot(data, aes(X, Y, fill= Z)) +
 ggplot(iris, aes(Species, Petal.Length, color=Species, fill=Species)) +
   geom_boxplot(alpha=.2) +
   scale_color_manual(values = c("sienna", "seagreen", "indianred2")) +
-  scale_fill_manual(values = c("chocolate2", "olivedrab3", "tomato3"))
+  scale_fill_manual(values = c("chocolate2", "olivedrab3", "tomato3")) +
+  annotate(geom="text", y=7, x=c("setosa", "versicolor", "virginica"), label=c(34,12,7))
 
 
 
@@ -804,7 +817,7 @@ p + labs(title="Distribution of petal length",
         plot.background = element_rect(fill = "white"),
         legend.background = element_rect(color="lightgrey"),
         legend.text.align = 1,
-        legend.position = "right",
+        legend.position = "left",
         legend.title = element_text(size=18),
         legend.text = element_text(size=14)
   )
@@ -864,7 +877,7 @@ p + annotate(geom = "text", x=1.5, y=0.75, label = "Setosa", col="red") +
 
 
 # 2) Highlight dots of setosa by annotating a rectangle that cover all dots
-p + annotate("rect", xmin = 0.75, xmax = 2, ymin = 0, ymax = 0.75, alpha = .1, fill="yellow")
+p + annotate("rect", xmin = 0.75, xmax = 2, ymin = 0, ymax = 0.75, alpha = .3, fill="yellow")
 
 
 
