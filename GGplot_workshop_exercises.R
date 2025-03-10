@@ -17,10 +17,20 @@ if (any(installed_packages == FALSE)) {
 # Packages loading
 invisible(lapply(packages, library, character.only = TRUE))
 
-
 # Optional (for some examples):
-optional_packages <- c('maps', 'ggrepel', 'ggraph', 'igraph', 'tidygraph', 'GGally', 'ggtree', 'chorddiag', 'wordcloud2', 'gt', 'RColorBrewer')
-
+optional_packages <- c(
+  'maps',
+  'ggrepel',
+  'ggraph',
+  'igraph',
+  'tidygraph',
+  'GGally',
+  'ggtree',
+  'chorddiag',
+  'wordcloud2',
+  'gt',
+  'RColorBrewer'
+)
 # Install packages not yet installed
 installed_packages <- optional_packages %in% rownames(installed.packages())
 if (any(installed_packages == FALSE)) {
@@ -74,8 +84,8 @@ head(
 
 # The main function of ggplot is the ggplot() function. It has two main arguments that you need to be aware of:
 
-# Data: the (default) dataset to use for the plot 
-# Mapping: the aesthetic mappings 
+# Data: the (default) dataset to use for the plot
+# Mapping: the aesthetic mappings
 
 # When calling ggplot() we typically don’t call these arguments by their name and instead simply supply them in order.
 
@@ -118,7 +128,7 @@ ggplot(data = iris,
 #   alpha
 #   colour
 #   fill
-#   group   
+#   group
 #   shape
 #   size
 #   stroke
@@ -152,8 +162,8 @@ ggplot(data = iris,
 # Exercises:
 # 1) Generate a barplot showing car counts per classes using mpg dataset. Show counts in percentage of the total. This will require a new mapping in the geom
 ggplot(mpg, aes(x=class)) +
-  stat_count() 
-# is the same than 
+  stat_count()
+# is the same than
 ggplot(mpg, aes(x=class)) +
   geom_bar()
 # geom_bar uses the default values from stat_count to generate the plot
@@ -187,7 +197,7 @@ ggplot(iris, aes(x=Species, y=Petal.Length, color=Species, fill=Species)) +
 
 
 # facet_grid draws 1 plot on a canvas. We can draw different plots on 1 canvas using grid.arrange (libraries grid & gridExtra)
-# Shape of grid can be specified by a layout_matrix 
+# Shape of grid can be specified by a layout_matrix
 # We need to pass a list of ggplot objects (or 'grobs') as input
 # *A graphical object (“grob”) is a description of a graphical item. These basic classes provide default behaviour for validating, drawing, and modifying graphical objects.
 
@@ -197,19 +207,19 @@ ggplot(iris, aes(x=Species, y=Petal.Length, color=Species, fill=Species)) +
 # 3) Draw the 2 plots with the same size and without legend ( ... + theme(legend.position = "none") ) and make them share the same legend (Hint: use the following code to extract the legend as a grob)
 
 
-# function to extract legend from plot 
-get_only_legend <- function(plot) { 
-  plot_table <- ggplot_gtable(ggplot_build(plot)) 
-  legend_plot <- which(sapply(plot_table$grobs, function(x) x$name) == "guide-box") 
-  legend <- plot_table$grobs[[legend_plot]] 
-  return(legend) 
-} 
+# function to extract legend from plot
+get_only_legend <- function(plot) {
+  plot_table <- ggplot_gtable(ggplot_build(plot))
+  legend_plot <- which(sapply(plot_table$grobs, function(x) x$name) == "guide-box")
+  legend <- plot_table$grobs[[legend_plot]]
+  return(legend)
+}
 
 
 ##########################################################################################
 ###  Scales & Coordinates ###
 
-# Coordinates allows us to transform mappings. 
+# Coordinates allows us to transform mappings.
 # For example:
 #   - a cartesian coordinates system allows us to zoom in and out of a plot
 #   - a polar coordinate system interprets x and y as angles and radius
@@ -273,8 +283,8 @@ y <- paste0("var", seq(1,20))
 data <- expand.grid(X=x, Y=y)
 data$Z <- runif(400, 0, 5)
 
-# Exercises: 
-# 1) Using the data above draw a heatmap (geom_tile()) 
+# Exercises:
+# 1) Using the data above draw a heatmap (geom_tile())
 # 2) Change the filling using different scale_*
 # 3) Use iris data to draw again a box plot and change color and fill manually
 
@@ -282,7 +292,7 @@ data$Z <- runif(400, 0, 5)
 # Any other aesthetic in the plot can be modify using theme
 # Inside theme(...) you can control aesthetics for panel, plot, axis, legend, ...
 # Each aesthetic is defined by an `element_'shape'` constructor (text, line, blank, ...)
-# e.g. ggplot() + theme(axis.text = element_text(size=12)) -> To control the fontsize of (both) axis texts 
+# e.g. ggplot() + theme(axis.text = element_text(size=12)) -> To control the fontsize of (both) axis texts
 # There are some predefined themes in ggplot such as theme_bw(). theme_minimal(), theme_classic(), ...
 
 # Exercises:
@@ -298,9 +308,9 @@ data$Z <- runif(400, 0, 5)
 # Using the dot plot from the first examples...
 p <- ggplot(iris, aes(Petal.Length, Petal.Width, color=Species)) +
   geom_point(size=3) +
-  stat_smooth(method = "lm", 
-              formula = y ~ x, 
-              geom = "smooth", 
+  stat_smooth(method = "lm",
+              formula = y ~ x,
+              geom = "smooth",
               alpha=.2)
 p
 
