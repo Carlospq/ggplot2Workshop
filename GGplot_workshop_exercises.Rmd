@@ -47,7 +47,7 @@ if (any(installed_packages == FALSE)) {
 invisible(lapply(packages, library, character.only = TRUE))
 ```
 
-Optional packages used to show some plot examples
+Optional packages used to show some plot examples (Only needed for plot examples in "GGplot_workshop.Rmd")
 
 ```{r, message=FALSE}
 # Packages loading
