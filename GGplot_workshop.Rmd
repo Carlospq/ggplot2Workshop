@@ -1,5 +1,5 @@
 ---
-output: github_document
+output: pdf_document
 editor_options: 
   markdown: 
 
@@ -229,49 +229,63 @@ ggplot(iris, aes(x=Petal.Length, y=Petal.Width)) +
   geom_point()
 ```
 
-2)  Add a regression line (geom_smooth() with `formula = y ~ x` and `method='lm'`
+2)  Add a regression line (`geom_smooth()` with `formula = y ~ x` and `method='lm'`
 
 ```{r}
+
 ggplot(iris, aes(x=Petal.Length, y=Petal.Width)) +
   geom_point() +
   geom_smooth(formula = y ~ x, method='lm')
+
 ```
 
-3)  Using the previous plot, map the speceies data to the color of the dots. Try first to do the mapping on the geom_point function and then mapping it on the main function `ggplot()`
+3)  Using the previous plot, map the speceies data to the color of the dots. Try first to do the mapping on the `geom_point` function and then mapping it on the main function `ggplot()`
 
 ```{r}
+
 ggplot(iris, aes(x=Petal.Length, y=Petal.Width)) +
   geom_point(aes(color=Species)) +
   geom_smooth(formula = y ~ x, method='lm')
+
+ggplot(iris, aes(x=Petal.Length, y=Petal.Width, color=Species)) +
+  geom_point() +
+  geom_smooth(formula = y ~ x, method='lm')
+
 ```
 
 ```{r}
 library(ggpubr)
-ggplot(iris, aes(x=Petal.Length, y=Petal.Width, color=Species)) +
-  geom_point() +
+
+ggplot(iris, aes(x=Petal.Length, y=Petal.Width)) +
+  geom_point(aes(color=Species)) +
   geom_smooth(formula = y ~ x, method='lm') +
-  stat_cor()
+  stat_cor(method = "spearman")
+
 ```
 
 4)  Change size and shape of dots
 
 ```{r}
+
 ggplot(iris, aes(x=Petal.Length, y=Petal.Width, color=Species)) +
-  geom_point(size=3, shape=3) +
+  geom_point(size=3, shape=21) +
   geom_smooth(formula = y ~ x, method='lm')
+
 ```
 
-5)  Add a rectangle ( geom_rect() ) and fill it in green (?geom_rect)
+5)  Add a rectangle ( `geom_rect()` ) and fill it in green (?geom_rect)
 
 ```{r}
 ggplot(iris, aes(x=Petal.Length, y=Petal.Width, color=Species)) +
   geom_point(size=4, shape=3) +
   geom_smooth(formula = y ~ x, method='lm') +
-  geom_rect(aes(xmin=0.9, xmax=2, ymin=0, ymax=0.75), alpha=0.2, fill="green", color=NA) 
+  geom_rect(aes(xmin=0.9, xmax=2, ymin=0, ymax=0.75), alpha=0.002, fill="green", color=NA) 
 
 # ALERT! ACHTUNG! DANGER! PERICOLO!
 # x and y from ggplot() function are still being mapped in the layer geom_rect(). Meaning you are drowing 1 rectangle for each x+y from ggplot() (alpha not working as expected due to overlapping rectangles) 
 
+```
+```{r}
 # Solutions
 # Lowering value for alpha even more 
 ggplot(iris, aes(x=Petal.Length, y=Petal.Width, color=Species)) +
@@ -290,7 +304,7 @@ ggplot(iris, aes(x=Petal.Length, y=Petal.Width, color=Species)) +
   geom_point(size=4, shape=3) +
   geom_smooth(formula = y ~ x, method='lm') +
   # pass a new data for this layer consisting in only 1 row of the initial data
-  geom_rect(data=iris[1,], mapping=aes(xmin=0.9, xmax=2, ymin=0, ymax=0.75), alpha=0.2, fill="red", color=NA)
+  geom_rect(data =iris[1,], mapping=aes(xmin=0.9, xmax=2, ymin=0, ymax=0.75), alpha=0.2, fill="red", color=NA)
 
 ```
 
@@ -298,11 +312,16 @@ ggplot(iris, aes(x=Petal.Length, y=Petal.Width, color=Species)) +
 
 ```{r}
 d <- read.csv("https://raw.githubusercontent.com/vsbuffalo/bds-files/master/chapter-08-r/Dataset_S1.txt")
+d
+
 d$diversity <- d$Pi/(10 * 1000)
 d$position <- (d$end + d$start)/2
 
 ggplot(d, aes(x = position, y = diversity)) +
   geom_point(aes(color = diversity > 0.0075))
+
+
+
 ```
 
 ### More examples
@@ -357,25 +376,35 @@ ggplot(iris, aes(Petal.Length, Petal.Width, group=Species)) +
 
 ### Exercises:
 
-1)  Plot Species names instead of dots using geom_text. You will need to map Species names to `label`
+1)  Plot Species names instead of dots using `geom_text`. You will need to map Species names to `label`
 
 ```{r}
+library(ggrepel)
+
 ggplot(iris, aes(x=Petal.Length, y=Petal.Width)) +
-  geom_text(data=iris[iris$Petal.Length>6,], mapping=aes(label=Species)) +
-  geom_point( )
+  geom_point( ) +
+  # geom_label(data = iris[iris$Petal.Length > 6,], mapping=aes(label=Species)) +
+  geom_label_repel(data = iris[iris$Petal.Width > 2, ], mapping=aes(label=Species)) +
+  # geom_text(mapping=aes(label=Species)) +
+  # geom_text() +
+  lims(y = c(0, 3))+
+  NULL
 ```
 
 2)  Generate a boxplot or violinplot for Petal.Length data with one box for each species
 
 ```{r}
 ggplot(iris, aes(x=Species, y=Petal.Length)) +
-  geom_violin(aes(color=Species, fill=Species), alpha=0.5)
+  geom_boxplot(aes(color=Species, fill=Species), alpha=0.5)+
+  geom_jitter()
 ```
 
 3)  Repeat the boxplot but now try to have all variables (Petal.Length, Petal.Width, Sepal.Length, Sepal.Width) in the same plot (\*You need the long format to do this plot)
 
 ```{r}
 miris <- melt(iris)
+
+
 ggplot(miris, aes(x=variable, y=value, color=Species, fill=Species)) +
   geom_boxplot(alpha=.2) +
   geom_jitter(position=position_jitterdodge(jitter.width = .25), size=.75)
@@ -387,6 +416,12 @@ ggplot(miris, aes(x=variable, y=value, color=Species, fill=Species)) +
 ggplot(iris, aes(x=Petal.Length, color=Species)) +
   geom_density() +
   geom_rug() # from ggpubr package
+
+ggplot(iris, aes(x = Petal.Length, color = Species))+
+  geom_density()+
+  labs(x = "", y = "", title = "")+
+  NULL
+
 ```
 
 5)  Add the bar plot on top of the previous density plot. Use position="dodge" to plot the bars side by side
@@ -396,6 +431,7 @@ ggplot(iris, aes(x=Petal.Length, color=Species)) +
   # position="dodge" to avoid stacked bars
   geom_bar(aes(fill=Species), position="dodge", alpha=.1) +
   geom_density(linewidth=1)
+
 ```
 
 ### More examples
